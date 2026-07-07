@@ -14,7 +14,7 @@ const workerSchema = zod_1.z.object({
     alternatePhone: zod_1.z.string().regex(/^\d{10}$/, 'Alternate phone must be exactly 10 digits').or(zod_1.z.literal('')).optional().nullable(),
     email: zod_1.z.string().email('Invalid email address'),
     role: zod_1.z.string().min(1, 'Role/skill tag is required'),
-    avatarUrl: zod_1.z.string().url('Invalid avatar URL').or(zod_1.z.literal('')).optional().nullable(),
+    avatarUrl: zod_1.z.string().or(zod_1.z.literal('')).optional().nullable(),
     isActive: zod_1.z.boolean().optional(),
 });
 // GET /api/workers - List all workers
@@ -28,6 +28,8 @@ router.get('/', auth_js_1.authMiddleware, async (req, res) => {
                 { name: { contains: String(search) } },
                 { email: { contains: String(search) } },
                 { role: { contains: String(search) } },
+                { phone: { contains: String(search) } },
+                { alternatePhone: { contains: String(search) } },
             ];
         }
         // Filter by exact role if provided
@@ -169,12 +171,11 @@ router.delete('/:id', auth_js_1.authMiddleware, async (req, res) => {
             res.status(404).json({ error: 'Worker not found' });
             return;
         }
-        // Set isActive to false instead of hard deleting (to preserve history)
-        const deactivatedWorker = await prisma_js_1.default.worker.update({
+        // Hard delete worker and cascade delete assignments
+        const deletedWorker = await prisma_js_1.default.worker.delete({
             where: { id },
-            data: { isActive: false },
         });
-        res.json({ message: 'Worker deactivated successfully', worker: deactivatedWorker });
+        res.json({ message: 'Worker deleted successfully', worker: deletedWorker });
     }
     catch (error) {
         console.error(error);

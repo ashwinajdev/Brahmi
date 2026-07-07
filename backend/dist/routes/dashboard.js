@@ -6,10 +6,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const prisma_js_1 = __importDefault(require("../db/prisma.js"));
 const auth_js_1 = require("../middleware/auth.js");
+const workHelper_js_1 = require("../utils/workHelper.js");
 const router = (0, express_1.Router)();
 // GET /api/dashboard/stats
 router.get('/stats', auth_js_1.authMiddleware, async (req, res) => {
     try {
+        // Rollover past active tasks to today
+        await (0, workHelper_js_1.autoUpdatePastWorks)();
         const now = new Date();
         // 1. Get total works by status
         const worksByStatus = await prisma_js_1.default.work.groupBy({

@@ -7,6 +7,7 @@ const express_1 = require("express");
 const zod_1 = require("zod");
 const prisma_js_1 = __importDefault(require("../db/prisma.js"));
 const auth_js_1 = require("../middleware/auth.js");
+const workHelper_js_1 = require("../utils/workHelper.js");
 const router = (0, express_1.Router)();
 const workSchema = zod_1.z.object({
     title: zod_1.z.string().min(1, 'Title is required'),
@@ -20,6 +21,8 @@ const workSchema = zod_1.z.object({
 // GET /api/works - List all work tasks
 router.get('/', auth_js_1.authMiddleware, async (req, res) => {
     try {
+        // Rollover past active tasks to today
+        await (0, workHelper_js_1.autoUpdatePastWorks)();
         const { search, priority, status, category } = req.query;
         const whereClause = {};
         if (search) {
@@ -91,7 +94,12 @@ router.get('/:id', auth_js_1.authMiddleware, async (req, res) => {
         }
         const activeWorkers = work.assignments
             .filter((a) => a.unassignedAt === null)
-            .map((a) => a.worker);
+            .map((a) => ({
+            ...a.worker,
+            assignmentId: a.id,
+            shift: a.shift,
+            amount: a.amount,
+        }));
         // Full assignment timeline history
         const assignmentHistory = work.assignments.map((a) => ({
             id: a.id,
@@ -100,6 +108,8 @@ router.get('/:id', auth_js_1.authMiddleware, async (req, res) => {
             workerAvatarUrl: a.worker.avatarUrl,
             assignedAt: a.assignedAt,
             unassignedAt: a.unassignedAt,
+            amount: a.amount,
+            shift: a.shift,
         }));
         res.json({
             ...work,
