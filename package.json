@@ -10,7 +10,7 @@
     "dev": "concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
     "build": "npm run build --workspace=backend && npm run build --workspace=frontend",
     "start": "npm start --workspace=backend",
-    "postinstall": "npm run setup --workspace=backend || true"
+    "postinstall": "node -e \"if (!process.env.VERCEL && !process.env.CI) { try { require('child_process').execSync('npm run setup --workspace=backend', {stdio: 'inherit'}); } catch(e) { process.exit(0); } }\""
   },
   "devDependencies": {
     "concurrently": "^9.1.0"
