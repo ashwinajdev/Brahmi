@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../lib/store.ts';
+import { useKeepAlive } from '../lib/useKeepAlive.ts';
 import {
   LayoutDashboard,
   Briefcase,
@@ -23,6 +24,9 @@ export default function Layout({ children, activeTab }: LayoutProps) {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  // Keep Render backend warm — silent /health ping every 8 minutes
+  useKeepAlive();
 
   useEffect(() => {
     const handleOnline = () => setIsOffline(false);

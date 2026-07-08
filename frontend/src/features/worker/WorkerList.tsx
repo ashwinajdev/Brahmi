@@ -880,7 +880,7 @@ export default function WorkerList() {
         {/* Add Action */}
         <button
           onClick={openAddModal}
-          className="flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-600 to-orange-600 text-white rounded-xl text-xs font-semibold cursor-pointer shadow-md hover:from-purple-500 hover:to-orange-500 transition-all select-none"
+          className="flex items-center justify-center gap-1.5 px-4 py-2 bg-purple-600 text-white rounded-xl text-xs font-semibold cursor-pointer shadow-md hover:bg-purple-700 transition-colors select-none"
         >
           <UserPlus className="w-4 h-4" /> Add Worker
         </button>
@@ -1136,7 +1136,7 @@ export default function WorkerList() {
                 <button
                   type="submit"
                   disabled={createWorkerMutation.isPending || updateWorkerMutation.isPending}
-                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-orange-600 text-white rounded-xl text-xs font-semibold cursor-pointer shadow-md hover:from-purple-500 hover:to-orange-500 transition-all flex items-center gap-1.5"
+                  className="px-4 py-2 bg-purple-600 text-white rounded-xl text-xs font-semibold cursor-pointer shadow-md hover:bg-purple-700 transition-colors flex items-center gap-1.5"
                 >
                   {(createWorkerMutation.isPending || updateWorkerMutation.isPending) && (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />

@@ -178,7 +178,7 @@ export default function Register() {
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-3.5 px-4 rounded-xl border border-transparent text-sm font-semibold text-white bg-gradient-to-r from-purple-600 to-orange-600 hover:from-purple-500 hover:to-orange-500 focus:outline-none focus:ring-4 focus:ring-purple-500/20 active:scale-[0.98] transition-all duration-200 cursor-pointer shadow-[0_10px_25px_-5px_rgba(147,51,234,0.3)] hover:shadow-[0_12px_28px_-5px_rgba(147,51,234,0.4)] disabled:opacity-50 disabled:pointer-events-none"
+              className="group relative w-full flex justify-center py-3.5 px-4 rounded-xl border border-transparent text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-4 focus:ring-purple-500/20 active:scale-[0.98] transition-all duration-200 cursor-pointer shadow-[0_10px_25px_-5px_rgba(147,51,234,0.3)] hover:shadow-[0_12px_28px_-5px_rgba(147,51,234,0.4)] disabled:opacity-50 disabled:pointer-events-none"
             >
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />

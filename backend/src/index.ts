@@ -47,4 +47,30 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // Start Server
 app.listen(PORT, () => {
   console.log(`Brahmi API Server is running on port ${PORT}`);
+
+  // ── Keep-Alive: prevent Render free-tier spin-down ──────────────────────
+  // Only activates when RENDER_BACKEND_URL is set (i.e. in production).
+  // Pings /health every 10 minutes so the dyno never goes idle.
+  const KEEP_ALIVE_URL = process.env.RENDER_BACKEND_URL
+    ? `${process.env.RENDER_BACKEND_URL}/health`
+    : null;
+
+  if (KEEP_ALIVE_URL) {
+    const INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+    console.log(`[keep-alive] Self-ping enabled → ${KEEP_ALIVE_URL} every 10 min`);
+
+    setInterval(async () => {
+      try {
+        const res = await fetch(KEEP_ALIVE_URL);
+        if (res.ok) {
+          console.log(`[keep-alive] ✓ pinged at ${new Date().toISOString()}`);
+        } else {
+          console.warn(`[keep-alive] ✗ unexpected status ${res.status}`);
+        }
+      } catch (err: any) {
+        console.warn(`[keep-alive] ✗ ping failed: ${err?.message ?? err}`);
+      }
+    }, INTERVAL_MS);
+  }
+  // ────────────────────────────────────────────────────────────────────────
 });

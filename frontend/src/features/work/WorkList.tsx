@@ -331,7 +331,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
 
             <button
               onClick={openAddModal}
-              className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-orange-600 text-white rounded-lg text-xs font-semibold cursor-pointer shadow-md hover:from-purple-500 hover:to-orange-500 transition-all select-none whitespace-nowrap shrink-0"
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-semibold cursor-pointer shadow-md hover:bg-purple-700 transition-colors select-none whitespace-nowrap shrink-0"
             >
               <Plus className="w-3.5 h-3.5" /> Add Work
             </button>
@@ -722,7 +722,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                 <button
                   type="submit"
                   disabled={createWorkMutation.isPending || updateWorkMutation.isPending}
-                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-orange-600 text-white rounded-xl text-xs font-semibold cursor-pointer shadow-md hover:from-purple-500 hover:to-orange-500 transition-all flex items-center gap-1.5"
+                  className="px-4 py-2 bg-purple-600 text-white rounded-xl text-xs font-semibold cursor-pointer shadow-md hover:bg-purple-700 transition-colors flex items-center gap-1.5"
                 >
                   {(createWorkMutation.isPending || updateWorkMutation.isPending) && (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -995,7 +995,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                   <button
                     onClick={handleSaveAssignments}
                     disabled={syncAssignmentsMutation.isPending}
-                    className="w-full py-2 bg-gradient-to-r from-purple-600 to-orange-600 hover:from-purple-500 hover:to-orange-500 text-white rounded-xl text-xs font-semibold cursor-pointer shadow-md transition-all flex items-center justify-center gap-1.5"
+                    className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-semibold cursor-pointer shadow-md transition-colors flex items-center justify-center gap-1.5"
                   >
                     {syncAssignmentsMutation.isPending && (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1175,7 +1175,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                     setIsAssignPopupOpen(false);
                     setIsEditingSelectedAssignment(false);
                   }}
-                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-orange-600 hover:from-purple-500 hover:to-orange-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow"
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow"
                 >
                   {isEditingSelectedAssignment ? 'Confirm Edit' : 'Confirm Assign'}
                 </button>

@@ -106,7 +106,7 @@ export default function Settings() {
             </div>
             <button
               onClick={handleInstallClick}
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-orange-600 text-white rounded-xl text-xs font-semibold cursor-pointer shadow-md"
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-semibold cursor-pointer shadow-md transition-colors"
             >
               Install App
             </button>
