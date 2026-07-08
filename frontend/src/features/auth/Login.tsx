@@ -90,16 +90,16 @@ export default function Login() {
   }, [pin, isLoading]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-purple-50/50 to-orange-50/30 dark:from-slate-950 dark:via-slate-900/50 dark:to-slate-950/80 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-sky-50/50 to-orange-50/30 dark:from-slate-950 dark:via-slate-900/50 dark:to-slate-950/80 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Dynamic Animated Background Blobs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-purple-200/40 dark:bg-purple-900/10 blur-[100px] pointer-events-none animate-pulse-slow" />
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-sky-200/40 dark:bg-sky-900/10 blur-[100px] pointer-events-none animate-pulse-slow" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-orange-200/30 dark:bg-orange-900/10 blur-[100px] pointer-events-none animate-pulse-slow" />
       <div className="absolute top-[40%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-indigo-50/40 dark:bg-indigo-950/10 blur-[120px] pointer-events-none" />
 
       <div className="max-w-md w-full space-y-8 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-8 rounded-2xl relative z-10 border border-white/80 dark:border-slate-800/80 shadow-[0_20px_50px_rgba(31,41,55,0.05)] hover:shadow-[0_24px_58px_rgba(31,41,55,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all duration-500 ease-out animate-slide-up">
         <div className="text-center">
           {/* Animated Logo Container */}
-          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-2xl bg-gradient-to-tr from-purple-600 to-orange-500 shadow-[0_8px_20px_rgba(147,51,234,0.25)] hover:rotate-6 transition-transform duration-300 ease-out">
+          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-2xl bg-sky-600 shadow-[0_8px_20px_rgba(14,165,233,0.25)] hover:rotate-6 transition-transform duration-300 ease-out">
             <span className="font-display font-bold text-3xl text-white select-none">B</span>
           </div>
           <h2 className="mt-6 text-2xl font-display font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
@@ -120,7 +120,7 @@ export default function Login() {
                   key={index}
                   className={`w-4 h-4 rounded-full transition-all duration-200 ${
                     hasDigit
-                      ? 'bg-gradient-to-r from-purple-600 to-orange-500 scale-125 shadow-[0_0_10px_rgba(147,51,234,0.5)]'
+                      ? 'bg-sky-600 scale-125 shadow-[0_0_10px_rgba(14,165,233,0.5)]'
                       : 'bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600'
                   }`}
                 />
@@ -174,7 +174,7 @@ export default function Login() {
             type="button"
             onClick={() => handlePinSubmit()}
             disabled={isLoading}
-            className="w-16 h-16 rounded-full flex items-center justify-center text-white bg-gradient-to-tr from-purple-600 to-orange-500 hover:from-purple-500 hover:to-orange-450 hover:scale-105 active:scale-95 shadow-[0_4px_12px_rgba(147,51,234,0.3)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.5)] transition-all duration-150 disabled:opacity-50 select-none cursor-pointer"
+            className="w-16 h-16 rounded-full flex items-center justify-center text-white bg-sky-600 hover:bg-sky-700 hover:scale-105 active:scale-95 shadow-[0_4px_12px_rgba(14,165,233,0.3)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.5)] transition-all duration-150 disabled:opacity-50 select-none cursor-pointer"
             title="Login to app"
           >
             {isLoading ? (
@@ -189,7 +189,7 @@ export default function Login() {
         <div className="text-center pt-2">
           <a
             href="#register"
-            className="text-xs font-semibold text-slate-400 dark:text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+            className="text-xs font-semibold text-slate-400 dark:text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 transition-colors"
           >
             Switch to Email Registration
           </a>

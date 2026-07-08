@@ -68,7 +68,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
       <aside className={`hidden md:flex flex-col w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shrink-0 h-screen sticky top-0 ${isOffline ? 'pt-8' : ''}`}>
         {/* Brand */}
         <div className="h-16 flex items-center gap-2.5 px-6 border-b border-slate-200 dark:border-slate-800">
-          <div className="h-9 w-9 rounded-lg bg-gradient-to-tr from-purple-500 to-orange-500 flex items-center justify-center shadow-md">
+          <div className="h-9 w-9 rounded-lg bg-sky-600 flex items-center justify-center shadow-md">
             <span className="font-display font-bold text-white text-lg">B</span>
           </div>
           <span className="font-display font-extrabold text-xl tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
@@ -87,7 +87,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
                 href={item.hash}
                 className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   isActive
-                    ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-l-4 border-purple-500 pl-3'
+                    ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-l-4 border-sky-500 pl-3'
                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50'
                 }`}
               >
@@ -137,7 +137,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
         {/* Mobile Header */}
         <header className={`md:hidden h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 shrink-0 sticky top-0 z-30 ${isOffline ? 'mt-7' : ''}`}>
           <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-md bg-gradient-to-tr from-purple-500 to-orange-500 flex items-center justify-center">
+            <div className="h-7 w-7 rounded-md bg-sky-600 flex items-center justify-center">
               <span className="font-display font-bold text-white text-xs">B</span>
             </div>
             <h1 className="font-display font-bold text-md text-slate-900 dark:text-white">
@@ -197,7 +197,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
                         onClick={() => setIsMobileMenuOpen(false)}
                         className={`flex flex-col items-center justify-center p-4 rounded-xl text-xs font-semibold gap-2 border border-slate-100 dark:border-slate-800/60 transition-all ${
                           isActive
-                            ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30'
+                            ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30'
                             : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
                         }`}
                       >
@@ -295,7 +295,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
                   href={item.hash}
                   className={`flex flex-col items-center justify-center min-w-[64px] h-12 rounded-xl gap-0.5 transition-all duration-300 ${
                     isActive
-                      ? 'bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 scale-105 font-bold'
+                      ? 'bg-sky-500/10 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 scale-105 font-bold'
                       : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-355'
                   }`}
                 >

@@ -104,10 +104,10 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
     <div className="space-y-6">
       {/* Header Banner */}
       <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-purple-600/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-sky-600/5 rounded-full blur-3xl pointer-events-none" />
         <div>
           <h2 className="text-xl md:text-2xl font-display font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-            Workspace Overview <TrendingUp className="w-5 h-5 text-purple-500" />
+            Workspace Overview <TrendingUp className="w-5 h-5 text-sky-500" />
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Real-time synchronization of active worker loads and pending tasks.
@@ -133,7 +133,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             <h3 className="text-2xl md:text-3xl font-display font-extrabold text-slate-900 dark:text-white">{totalWorks}</h3>
             <p className="text-[10px] text-slate-400 font-medium">Click to see task board</p>
           </div>
-          <div className="p-3 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-xl">
+          <div className="p-3 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-xl">
             <Briefcase className="w-6 h-6" />
           </div>
         </div>
@@ -194,7 +194,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
               {overdueCount > 0 && (
                 <button
                   onClick={() => onNavigate('works')}
-                  className="text-xs font-bold text-purple-600 dark:text-purple-400 flex items-center gap-0.5 hover:underline cursor-pointer"
+                  className="text-xs font-bold text-sky-600 dark:text-sky-400 flex items-center gap-0.5 hover:underline cursor-pointer"
                 >
                   View Tasks Board <ChevronRight className="w-4 h-4" />
                 </button>
@@ -214,7 +214,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                     className="py-3.5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/20 px-2 rounded-xl transition-all cursor-pointer group"
                   >
                     <div className="space-y-0.5 pr-4 truncate">
-                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors truncate">
+                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors truncate">
                         {task.title}
                       </p>
                       <p className="text-[10px] text-red-500 font-semibold flex items-center gap-1">
@@ -247,7 +247,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
               {unassignedCount > 0 && (
                 <button
                   onClick={() => onNavigate('works')}
-                  className="text-xs font-bold text-purple-600 dark:text-purple-400 flex items-center gap-0.5 hover:underline cursor-pointer"
+                  className="text-xs font-bold text-sky-600 dark:text-sky-400 flex items-center gap-0.5 hover:underline cursor-pointer"
                 >
                   View Tasks Board <ChevronRight className="w-4 h-4" />
                 </button>
@@ -267,7 +267,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                     className="py-3.5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/20 px-2 rounded-xl transition-all cursor-pointer group"
                   >
                     <div className="space-y-0.5 pr-4 truncate">
-                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors truncate">
+                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors truncate">
                         {task.title}
                       </p>
                       <p className="text-[10px] text-slate-400 font-semibold">
@@ -293,7 +293,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col h-fit">
           <div className="pb-4 border-b border-slate-100 dark:border-slate-800/80">
             <h3 className="font-display font-bold text-md text-slate-900 dark:text-white flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-purple-500" /> Worker Workload
+              <UserCheck className="w-5 h-5 text-sky-500" /> Worker Workload
             </h3>
             <p className="text-[10px] text-slate-400 mt-0.5">Active assignments count per staff member</p>
           </div>

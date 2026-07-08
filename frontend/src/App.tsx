@@ -101,7 +101,7 @@ export default function App() {
   if (isLoadingAuth) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white">
-        <Loader2 className="w-10 h-10 text-purple-500 animate-spin mb-4" />
+        <Loader2 className="w-10 h-10 text-sky-500 animate-spin mb-4" />
         <p className="text-xs text-slate-400 font-display font-semibold uppercase tracking-widest animate-pulse">
           Synchronizing Brahmi System
         </p>

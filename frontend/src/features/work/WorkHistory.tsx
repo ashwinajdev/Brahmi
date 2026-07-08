@@ -388,7 +388,7 @@ export default function WorkHistory() {
 
         {isLoadingDetails || !workDetails ? (
           <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-            <Loader2 className="w-8 h-8 animate-spin text-purple-500 mb-2" />
+            <Loader2 className="w-8 h-8 animate-spin text-sky-500 mb-2" />
             <span className="text-xs font-semibold">Loading task log files...</span>
           </div>
         ) : (
@@ -437,7 +437,7 @@ export default function WorkHistory() {
                   <select
                     value={dateFilterType}
                     onChange={(e) => setDateFilterType(e.target.value as any)}
-                    className="px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-750 focus:outline-none focus:ring-1 focus:ring-purple-500 cursor-pointer w-full sm:w-44 font-semibold"
+                    className="px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-750 focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer w-full sm:w-44 font-semibold"
                   >
                     <option value="all">All Time</option>
                     <option value="specific">Specific Date</option>
@@ -455,7 +455,7 @@ export default function WorkHistory() {
                     type="date"
                     value={specificDate}
                     onChange={(e) => setSpecificDate(e.target.value)}
-                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-purple-500 cursor-pointer"
+                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer"
                   />
                 </div>
               )}
@@ -468,7 +468,7 @@ export default function WorkHistory() {
                       type="date"
                       value={customFromDate}
                       onChange={(e) => setCustomFromDate(e.target.value)}
-                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-purple-500 cursor-pointer"
+                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer"
                     />
                   </div>
                   <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
@@ -477,7 +477,7 @@ export default function WorkHistory() {
                       type="date"
                       value={customToDate}
                       onChange={(e) => setCustomToDate(e.target.value)}
-                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-purple-500 cursor-pointer"
+                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer"
                     />
                   </div>
                 </div>
@@ -508,7 +508,7 @@ export default function WorkHistory() {
                     ) : (
                       <button
                         onClick={handleStartDetailEdit}
-                        className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[10px] font-extrabold shadow transition-colors flex items-center gap-1 cursor-pointer"
+                        className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-[10px] font-extrabold shadow transition-colors flex items-center gap-1 cursor-pointer"
                       >
                         <Edit2 className="w-3 h-3" /> Edit Logs
                       </button>
@@ -528,7 +528,7 @@ export default function WorkHistory() {
                       <div key={group.dateKey} className="space-y-2 border border-slate-150 rounded-2xl p-4 bg-slate-50/20">
                         {/* Date Section Header */}
                         <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
-                          <span className="text-xs font-extrabold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-lg">
+                          <span className="text-xs font-extrabold text-sky-600 bg-sky-50 px-2.5 py-1 rounded-lg">
                             Date: {formatDate(group.dateRaw)}
                           </span>
                         </div>
@@ -581,7 +581,7 @@ export default function WorkHistory() {
                                                 }}
                                                 className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition-all cursor-pointer select-none ${
                                                   isSelected
-                                                    ? 'bg-purple-600 text-white border-purple-600'
+                                                    ? 'bg-sky-600 text-white border-sky-600'
                                                     : 'bg-white text-slate-500 border-slate-200'
                                                 }`}
                                               >
@@ -591,7 +591,7 @@ export default function WorkHistory() {
                                           })}
                                         </div>
                                       ) : (
-                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-purple-50 border border-purple-100 text-purple-600 whitespace-nowrap">
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-sky-50 border border-sky-100 text-sky-600 whitespace-nowrap">
                                           {item.shifts.join(' & ')}
                                         </span>
                                       )}
@@ -630,7 +630,7 @@ export default function WorkHistory() {
                                             value={edits.amount}
                                             onChange={(e) => updateRowDetailField(item.id, 'amount', e.target.value)}
                                             placeholder="-"
-                                            className="w-12 text-center px-1 py-1 text-xs rounded-lg border border-slate-200 bg-white text-slate-750 focus:outline-none focus:ring-1 focus:ring-purple-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-semibold"
+                                            className="w-12 text-center px-1 py-1 text-xs rounded-lg border border-slate-200 bg-white text-slate-750 focus:outline-none focus:ring-1 focus:ring-sky-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-semibold"
                                           />
                                           <button
                                             type="button"
@@ -658,20 +658,20 @@ export default function WorkHistory() {
                         {/* Total allocation summary for this Date */}
                         <div className="flex justify-between items-center bg-slate-50/50 p-2.5 rounded-xl border border-slate-100/50 mt-2 text-xs font-bold text-slate-700">
                           <span>Total Workers: {group.items.length}</span>
-                          <span>Total Pay: <span className="text-purple-600 text-sm font-extrabold">₹{group.totalAmount}</span></span>
+                          <span>Total Pay: <span className="text-sky-600 text-sm font-extrabold">₹{group.totalAmount}</span></span>
                         </div>
                       </div>
                     ))}
 
                     {/* Grand Total of All Work Allocation */}
-                    <div className="flex justify-between items-center bg-purple-600/10 p-4 rounded-2xl border border-purple-500/25 mt-4 text-xs font-bold text-slate-800">
+                    <div className="flex justify-between items-center bg-sky-600/10 p-4 rounded-2xl border border-sky-500/25 mt-4 text-xs font-bold text-slate-800">
                       <div className="flex flex-col text-left">
                         <span className="text-purple-750 uppercase tracking-wider font-extrabold">Grand Total Pay</span>
-                        <span className="text-[10px] text-purple-400 uppercase font-bold tracking-wider mt-0.5">(All Dates)</span>
+                        <span className="text-[10px] text-sky-400 uppercase font-bold tracking-wider mt-0.5">(All Dates)</span>
                       </div>
                       <div className="flex flex-col text-right">
                         <span className="text-slate-450 text-[10px] uppercase font-extrabold tracking-wider">Total Pay</span>
-                        <span className="text-purple-600 text-base font-black">₹{groupedByDate.reduce((sum, g) => sum + g.totalAmount, 0)}</span>
+                        <span className="text-sky-600 text-base font-black">₹{groupedByDate.reduce((sum, g) => sum + g.totalAmount, 0)}</span>
                       </div>
                     </div>
                   </>
@@ -701,7 +701,7 @@ export default function WorkHistory() {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
+            className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500"
             placeholder="Search completed tasks..."
           />
         </div>
@@ -710,7 +710,7 @@ export default function WorkHistory() {
       {/* Main Content (Cards Grid) */}
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-          <Loader2 className="w-8 h-8 animate-spin text-purple-500 mb-2" />
+          <Loader2 className="w-8 h-8 animate-spin text-sky-500 mb-2" />
           <span className="text-xs font-semibold">Loading completed tasks...</span>
         </div>
       ) : isError ? (
@@ -737,7 +737,7 @@ export default function WorkHistory() {
             <div 
               key={work.id} 
               onClick={() => setSelectedWorkId(work.id)}
-              className="bg-white border border-slate-200 hover:border-purple-300 dark:hover:border-purple-400 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-4 group"
+              className="bg-white border border-slate-200 hover:border-sky-300 dark:hover:border-sky-400 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-4 group"
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -746,14 +746,14 @@ export default function WorkHistory() {
                       Completed
                     </span>
                     {(work as any).occurrencesCount > 1 && (
-                      <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase bg-purple-500/10 text-purple-600 rounded-md border border-purple-500/20">
+                      <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase bg-sky-500/10 text-sky-600 rounded-md border border-sky-500/20">
                         {(work as any).occurrencesCount} Instances
                       </span>
                     )}
                   </div>
                   {getPriorityBadge(work.priority)}
                 </div>
-                <h4 className="font-extrabold text-slate-900 group-hover:text-purple-600 transition-colors text-base tracking-tight leading-snug text-left">
+                <h4 className="font-extrabold text-slate-900 group-hover:text-sky-600 transition-colors text-base tracking-tight leading-snug text-left">
                   {work.title}
                 </h4>
                 <p className="text-xs text-slate-450 line-clamp-2 text-left">

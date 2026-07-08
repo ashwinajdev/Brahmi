@@ -96,9 +96,9 @@ export default function Settings() {
             <span>Brahmi is successfully running as an installed PWA. Offline database query enabled!</span>
           </div>
         ) : isInstallable ? (
-          <div className="flex items-center justify-between p-3.5 bg-purple-500/10 border border-purple-500/20 rounded-xl">
+          <div className="flex items-center justify-between p-3.5 bg-sky-500/10 border border-sky-500/20 rounded-xl">
             <div className="flex items-center gap-3">
-              <Download className="w-5 h-5 text-purple-500 shrink-0" />
+              <Download className="w-5 h-5 text-sky-500 shrink-0" />
               <div>
                 <span className="block text-xs font-bold text-slate-800 dark:text-slate-200">App ready to install</span>
                 <span className="text-[10px] text-slate-400">Click to install as full window desktop app</span>
@@ -106,7 +106,7 @@ export default function Settings() {
             </div>
             <button
               onClick={handleInstallClick}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-semibold cursor-pointer shadow-md transition-colors"
+              className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-semibold cursor-pointer shadow-md transition-colors"
             >
               Install App
             </button>
@@ -122,7 +122,7 @@ export default function Settings() {
 
             <div className="border border-slate-100 dark:border-slate-800 rounded-xl p-4 bg-slate-50/50 dark:bg-slate-900/20 space-y-3">
               <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                <Smartphone className="w-4 h-4 text-purple-500" /> iOS & Safari Installation (Mobile)
+                <Smartphone className="w-4 h-4 text-sky-500" /> iOS & Safari Installation (Mobile)
               </h4>
               <ol className="text-[11px] list-decimal list-inside text-slate-500 dark:text-slate-400 space-y-1 pl-1 leading-relaxed">
                 <li>Open this site inside the default <strong>Safari Browser</strong>.</li>

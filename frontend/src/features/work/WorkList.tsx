@@ -324,14 +324,14 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500"
                 placeholder="Search by title, location..."
               />
             </div>
 
             <button
               onClick={openAddModal}
-              className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-semibold cursor-pointer shadow-md hover:bg-purple-700 transition-colors select-none whitespace-nowrap shrink-0"
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-sky-600 text-white rounded-lg text-xs font-semibold cursor-pointer shadow-md hover:bg-sky-700 transition-colors select-none whitespace-nowrap shrink-0"
             >
               <Plus className="w-3.5 h-3.5" /> Add Work
             </button>
@@ -342,7 +342,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-purple-500 cursor-pointer"
+              className="px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer"
             >
               <option value="">All Statuses</option>
               <option value="pending">Pending</option>
@@ -359,7 +359,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
             <button
               onClick={() => setViewMode('kanban')}
               className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                viewMode === 'kanban' ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-400'
+                viewMode === 'kanban' ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm' : 'text-slate-400'
               }`}
               title="Board view"
             >
@@ -368,7 +368,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
             <button
               onClick={() => setViewMode('list')}
               className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                viewMode === 'list' ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-400'
+                viewMode === 'list' ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm' : 'text-slate-400'
               }`}
               title="List view"
             >
@@ -421,9 +421,9 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
               }).length;
 
               let tabLabel = 'Today';
-              let activeTextClass = 'text-purple-600 dark:text-purple-400';
+              let activeTextClass = 'text-sky-600 dark:text-sky-400';
               let activeBgClass = 'bg-white dark:bg-slate-900 shadow-sm';
-              let dotColor = 'bg-purple-500';
+              let dotColor = 'bg-sky-500';
 
               if (tab === 'tomorrow') {
                 tabLabel = 'Tomorrow';
@@ -496,7 +496,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
               });
               
               let statusTitle = 'Today';
-              let columnDotColor = 'bg-purple-500';
+              let columnDotColor = 'bg-sky-500';
               if (columnGroup === 'tomorrow') {
                 statusTitle = 'Tomorrow';
                 columnDotColor = 'bg-blue-500';
@@ -572,7 +572,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                       onClick={() => setSelectedWorkId(work.id)}
                     >
                       <td className="p-4 max-w-xs">
-                        <p className="font-bold text-slate-800 dark:text-slate-200 hover:text-purple-500 transition-colors truncate">
+                        <p className="font-bold text-slate-800 dark:text-slate-200 hover:text-sky-500 transition-colors truncate">
                           {work.title}
                         </p>
                       </td>
@@ -594,7 +594,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                         <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => openEditModal(work)}
-                            className="p-1.5 text-slate-400 hover:text-purple-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 text-slate-400 hover:text-sky-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
                             title="Edit task details"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
@@ -645,7 +645,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-purple-500 text-sm"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm"
                 >
                   <option value="" disabled>Select a Work Place...</option>
                   {(() => {
@@ -691,7 +691,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                     placeholder="Enter custom work place name..."
                     value={customTitleText}
                     onChange={(e) => setCustomTitleText(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-purple-500 text-sm"
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm"
                   />
                 </div>
               )}
@@ -706,7 +706,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                   required
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-purple-500 text-sm"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm"
                 />
               </div>
 
@@ -722,7 +722,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                 <button
                   type="submit"
                   disabled={createWorkMutation.isPending || updateWorkMutation.isPending}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-xl text-xs font-semibold cursor-pointer shadow-md hover:bg-purple-700 transition-colors flex items-center gap-1.5"
+                  className="px-4 py-2 bg-sky-600 text-white rounded-xl text-xs font-semibold cursor-pointer shadow-md hover:bg-sky-700 transition-colors flex items-center gap-1.5"
                 >
                   {(createWorkMutation.isPending || updateWorkMutation.isPending) && (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -745,7 +745,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
             {/* Header */}
             <div className="h-14 flex items-center justify-between px-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Briefcase className="w-4 h-4 text-purple-500" /> Work details
+                <Briefcase className="w-4 h-4 text-sky-500" /> Work details
               </span>
               <button
                 onClick={() => {
@@ -761,7 +761,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
             {/* Content Container */}
             {isLoadingDetails || !workDetails ? (
               <div className="flex-grow flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+                <Loader2 className="w-8 h-8 text-sky-500 animate-spin" />
               </div>
             ) : (
               <>
@@ -774,7 +774,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                       </span>
                       {/* Date indicator */}
                       <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-semibold bg-slate-50 dark:bg-slate-900/40 px-3 py-1.5 rounded-xl border border-slate-100 dark:border-slate-800/60 shrink-0">
-                        <Calendar className="w-4 h-4 text-purple-500" />
+                        <Calendar className="w-4 h-4 text-sky-500" />
                         <span>{formatDate(workDetails.dueDate)}</span>
                       </div>
                     </div>
@@ -807,7 +807,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                   <div className="bg-slate-50/50 dark:bg-slate-900/20 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/40 space-y-4">
                     <div>
                       <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                        <UserPlus className="w-4 h-4 text-purple-500" /> Assign Workers
+                        <UserPlus className="w-4 h-4 text-sky-500" /> Assign Workers
                       </h3>
                       <p className="text-[10px] text-slate-400 mt-0.5">Select and assign multiple workers as needed</p>
                     </div>
@@ -861,7 +861,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                                   setIsEditingAssignmentDetails(true);
                                 }
                               }}
-                              className="text-[10px] font-bold text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 cursor-pointer select-none"
+                              className="text-[10px] font-bold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 cursor-pointer select-none"
                             >
                               {isEditingAssignmentDetails ? 'Cancel' : 'Edit'}
                             </button>
@@ -890,7 +890,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                                   setIsEditingAssignments(true);
                                 }
                               }}
-                              className="text-[10px] font-bold text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 cursor-pointer select-none"
+                              className="text-[10px] font-bold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 cursor-pointer select-none"
                             >
                               {isEditingAssignments ? 'Cancel' : 'Remove'}
                             </button>
@@ -930,19 +930,19 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                               return (
                                 <div
                                   key={assign.workerId}
-                                  className="flex items-center justify-between p-2.5 bg-purple-500/5 dark:bg-purple-500/10 text-purple-600 dark:text-purple-300 border border-purple-500/20 rounded-xl text-xs font-semibold animate-scale-in"
+                                  className="flex items-center justify-between p-2.5 bg-sky-500/5 dark:bg-sky-500/10 text-sky-600 dark:text-sky-300 border border-sky-500/20 rounded-xl text-xs font-semibold animate-scale-in"
                                 >
                                   <div className="flex items-center gap-2.5">
                                     <img
                                       src={worker.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(worker.name)}`}
                                       alt={worker.name}
-                                      className="w-7 h-7 rounded-full object-cover border border-purple-500/20"
+                                      className="w-7 h-7 rounded-full object-cover border border-sky-500/20"
                                     />
                                     <div className="text-left">
                                       <p className="font-bold text-slate-800 dark:text-slate-200">{worker.name}</p>
                                       <p className="text-[10px] text-slate-455 mt-0.5 flex items-center gap-3">
                                         <span>
-                                          Shift: <span className="font-extrabold text-purple-600 dark:text-purple-400">{assign.shifts.join(' & ')}</span>
+                                          Shift: <span className="font-extrabold text-sky-600 dark:text-sky-400">{assign.shifts.join(' & ')}</span>
                                         </span>
                                         <span className="text-slate-300">•</span>
                                         <span>
@@ -959,7 +959,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                                           prev.filter((a) => a.workerId !== assign.workerId)
                                         );
                                       }}
-                                      className="p-1 hover:bg-purple-500/15 dark:hover:bg-purple-500/25 rounded-lg text-purple-600 dark:text-purple-300 cursor-pointer"
+                                      className="p-1 hover:bg-sky-500/15 dark:hover:bg-sky-500/25 rounded-lg text-sky-600 dark:text-sky-300 cursor-pointer"
                                     >
                                       <X className="w-4 h-4" />
                                     </button>
@@ -974,7 +974,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                                         setIsEditingSelectedAssignment(true);
                                         setIsAssignPopupOpen(true);
                                       }}
-                                      className="p-1 hover:bg-purple-500/15 dark:hover:bg-purple-500/25 rounded-lg text-purple-600 dark:text-purple-300 cursor-pointer"
+                                      className="p-1 hover:bg-sky-500/15 dark:hover:bg-sky-500/25 rounded-lg text-sky-600 dark:text-sky-300 cursor-pointer"
                                       title="Edit details"
                                     >
                                       <Edit2 className="w-4 h-4" />
@@ -995,7 +995,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                   <button
                     onClick={handleSaveAssignments}
                     disabled={syncAssignmentsMutation.isPending}
-                    className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-semibold cursor-pointer shadow-md transition-colors flex items-center justify-center gap-1.5"
+                    className="w-full py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-semibold cursor-pointer shadow-md transition-colors flex items-center justify-center gap-1.5"
                   >
                     {syncAssignmentsMutation.isPending && (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1041,7 +1041,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                   <select
                     value={selectedWorkerIdForAssign}
                     onChange={(e) => setSelectedWorkerIdForAssign(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-850 bg-slate-50 dark:bg-slate-950 text-slate-850 dark:text-white focus:outline-none focus:ring-1 focus:ring-purple-500 text-sm cursor-pointer"
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-850 bg-slate-50 dark:bg-slate-950 text-slate-850 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm cursor-pointer"
                   >
                     <option value="">-- Choose Worker --</option>
                     {roster.map((worker) => (
@@ -1066,7 +1066,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                         key={s}
                         className={`flex-1 flex items-center justify-center py-2 px-3 rounded-xl border text-xs font-bold cursor-pointer transition-all select-none ${
                           isSelected
-                            ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400 font-extrabold shadow-sm'
+                            ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/30 text-sky-600 dark:text-sky-400 font-extrabold shadow-sm'
                             : 'border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-900/40 text-slate-500 dark:text-slate-400 font-semibold'
                         }`}
                       >
@@ -1101,7 +1101,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                   type="number"
                   value={customAmount}
                   onChange={(e) => setCustomAmount(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-850 bg-slate-50 dark:bg-slate-950 text-slate-850 dark:text-white focus:outline-none focus:ring-1 focus:ring-purple-500 text-sm font-semibold"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-850 bg-slate-50 dark:bg-slate-950 text-slate-850 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm font-semibold"
                   placeholder="500"
                 />
               </div>
@@ -1175,7 +1175,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                     setIsAssignPopupOpen(false);
                     setIsEditingSelectedAssignment(false);
                   }}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow"
+                  className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow"
                 >
                   {isEditingSelectedAssignment ? 'Confirm Edit' : 'Confirm Assign'}
                 </button>
@@ -1228,7 +1228,7 @@ function WorkCard({ work, onClick, onQuickStatusChange }: WorkCardProps) {
       className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-850 p-3 rounded-2xl shadow-sm hover:shadow-md dark:hover:border-slate-800/80 hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between min-h-[85px]"
     >
       <div className="flex items-start justify-between gap-3">
-        <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors leading-normal line-clamp-2">
+        <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors leading-normal line-clamp-2">
           {work.title}
         </h4>
         <div className="shrink-0 pt-0.5">
@@ -1239,7 +1239,7 @@ function WorkCard({ work, onClick, onQuickStatusChange }: WorkCardProps) {
       {/* Footer Block: Date, Avatars, and Minimalist Actions */}
       <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 font-bold border-t border-slate-50 dark:border-slate-800/40 pt-2">
         <span className="flex items-center gap-1">
-          <Calendar className="w-3.5 h-3.5 text-purple-400/80" />
+          <Calendar className="w-3.5 h-3.5 text-sky-400/80" />
           {formatDate(work.dueDate)}
         </span>
         

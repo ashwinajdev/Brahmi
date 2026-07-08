@@ -69,7 +69,7 @@ export default function ConfirmDialog() {
             className={`flex-1 py-2.5 text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-md ${
               isDestructive
                 ? 'bg-red-600 hover:bg-red-500 shadow-red-500/15 text-white border-none'
-                : 'bg-purple-600 hover:bg-purple-700 shadow-purple-500/15 text-white border-none'
+                : 'bg-sky-600 hover:bg-sky-700 shadow-sky-500/15 text-white border-none'
             }`}
           >
             {confirmText}
