@@ -18,8 +18,8 @@ async function main() {
     data: {
       email: 'admin@brahmi.com',
       password: hashedPassword,
-      name: 'Aditi Sharma',
-      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
+      name: 'Prakash Holla',
+      avatarUrl: null,
     },
   });
   console.log(`Created admin user: ${adminUser.email}`);

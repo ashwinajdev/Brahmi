@@ -9,7 +9,8 @@ import {
   CloudOff,
   Menu,
   X,
-  History
+  History,
+  User
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -99,11 +100,17 @@ export default function Layout({ children, activeTab }: LayoutProps) {
           {user && (
             <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/50">
               <div className="flex items-center gap-2.5">
-                <img
-                  src={user.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name)}`}
-                  alt={user.name}
-                  className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-800"
-                />
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.name}
+                    className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-800"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 shrink-0">
+                    <User className="w-5 h-5" />
+                  </div>
+                )}
                 <div className="overflow-hidden">
                   <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">{user.name}</p>
                   <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
@@ -141,11 +148,17 @@ export default function Layout({ children, activeTab }: LayoutProps) {
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="w-7 h-7 rounded-full overflow-hidden border border-slate-200 dark:border-slate-800 cursor-pointer"
               >
-                <img
-                  src={user.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name)}`}
-                  alt={user.name}
-                  className="w-full h-full object-cover"
-                />
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                    <User className="w-4 h-4" />
+                  </div>
+                )}
               </button>
             )}
             <button
@@ -214,11 +227,17 @@ export default function Layout({ children, activeTab }: LayoutProps) {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="text-center pb-3 border-b border-slate-100 dark:border-slate-800">
-                <img
-                  src={user.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name)}`}
-                  alt={user.name}
-                  className="w-12 h-12 rounded-full object-cover mx-auto mb-2 border"
-                />
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.name}
+                    className="w-12 h-12 rounded-full object-cover mx-auto mb-2 border"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 mx-auto mb-2 border border-slate-200 dark:border-slate-800 shrink-0">
+                    <User className="w-6 h-6" />
+                  </div>
+                )}
                 <h3 className="text-xs font-bold">{user.name}</h3>
                 <p className="text-[10px] text-slate-400">{user.email}</p>
               </div>

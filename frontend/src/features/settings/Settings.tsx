@@ -5,7 +5,8 @@ import {
   Download,
   Smartphone,
   CheckCircle,
-  HelpCircle
+  HelpCircle,
+  User
 } from 'lucide-react';
 
 export default function Settings() {
@@ -58,11 +59,17 @@ export default function Settings() {
           </h3>
           
           <div className="flex items-center gap-4 p-3 border border-slate-100 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-900/30">
-            <img
-              src={user.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name)}`}
-              alt={user.name}
-              className="w-16 h-16 rounded-full object-cover border"
-            />
+            {user.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user.name}
+                className="w-16 h-16 rounded-full object-cover border"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800 shrink-0">
+                <User className="w-8 h-8" />
+              </div>
+            )}
             <div className="min-w-0">
               <span className="inline-block text-[9px] font-extrabold bg-green-500/10 text-green-500 border border-green-500/20 px-2 py-0.5 rounded-full mb-1">
                 Admin Manager
