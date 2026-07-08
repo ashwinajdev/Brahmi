@@ -21,11 +21,6 @@ export function useKeepAlive() {
     if (document.hidden || !navigator.onLine) return;
 
     fetch('/health', { method: 'GET', cache: 'no-store' })
-      .then((res) => {
-        if (import.meta.env.DEV) {
-          console.debug(`[keep-alive] frontend ping → ${res.ok ? '✓ ok' : `✗ ${res.status}`}`);
-        }
-      })
       .catch(() => {
         // Silently swallow — server might be briefly unavailable
       });
