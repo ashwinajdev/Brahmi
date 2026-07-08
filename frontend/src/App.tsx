@@ -100,9 +100,18 @@ export default function App() {
   // 1. Loading State
   if (isLoadingAuth) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white">
-        <Loader2 className="w-10 h-10 text-sky-500 animate-spin mb-4" />
-        <p className="text-xs text-slate-400 font-display font-semibold uppercase tracking-widest animate-pulse">
+      <div
+        className="min-h-screen flex flex-col items-center justify-center"
+        style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+      >
+        <Loader2
+          className="w-10 h-10 animate-spin mb-4"
+          style={{ color: 'var(--accent-purple)' }}
+        />
+        <p
+          className="text-xs font-display font-semibold uppercase tracking-widest animate-pulse"
+          style={{ color: 'var(--text-secondary)' }}
+        >
           Synchronizing Brahmi System
         </p>
       </div>
