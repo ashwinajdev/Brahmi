@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppStore } from '../../lib/store.ts';
 import { api } from '../../lib/api.ts';
 import { Loader2, Check, Delete, Lock } from 'lucide-react';

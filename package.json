@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
-    "build": "npm run build --workspace=backend && npm run build --workspace=frontend",
+    "build": "node -e \"const cmd = process.env.VERCEL ? 'npm run build --workspace=frontend' : 'npm run build --workspace=backend && npm run build --workspace=frontend'; require('child_process').execSync(cmd, {stdio: 'inherit'});\"",
     "start": "npm start --workspace=backend",
     "db:seed": "npm run db:seed --workspace=backend",
     "postinstall": "node -e \"if (!process.env.VERCEL && !process.env.CI) { try { require('child_process').execSync('npm run setup --workspace=backend', {stdio: 'inherit'}); } catch(e) { process.exit(0); } }\""
