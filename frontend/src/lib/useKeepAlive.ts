@@ -20,7 +20,7 @@ export function useKeepAlive() {
   function ping() {
     if (document.hidden || !navigator.onLine) return;
 
-    fetch('/health', { method: 'GET', cache: 'no-store' })
+    fetch('/api/health', { method: 'GET', cache: 'no-store' })
       .catch(() => {
         // Silently swallow — server might be briefly unavailable
       });

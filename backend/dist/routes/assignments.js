@@ -9,18 +9,18 @@ const prisma_js_1 = __importDefault(require("../db/prisma.js"));
 const auth_js_1 = require("../middleware/auth.js");
 const router = (0, express_1.Router)();
 const assignmentSchema = zod_1.z.object({
-    workId: zod_1.z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Work ID (must be a 24-character MongoDB ObjectId)'),
-    workerId: zod_1.z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Worker ID (must be a 24-character MongoDB ObjectId)'),
+    workId: zod_1.z.string().uuid('Invalid Work ID'),
+    workerId: zod_1.z.string().uuid('Invalid Worker ID'),
     shift: zod_1.z.string().min(1).optional(),
     amount: zod_1.z.number().nonnegative().optional(),
 });
 const syncAssignmentItemSchema = zod_1.z.object({
-    workerId: zod_1.z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Worker ID (must be a 24-character MongoDB ObjectId)'),
+    workerId: zod_1.z.string().uuid('Invalid Worker ID'),
     shift: zod_1.z.string().min(1, 'Shift is required'),
     amount: zod_1.z.number().nonnegative().optional(),
 });
 const batchSyncSchema = zod_1.z.object({
-    workId: zod_1.z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Work ID (must be a 24-character MongoDB ObjectId)'),
+    workId: zod_1.z.string().uuid('Invalid Work ID'),
     assignments: zod_1.z.array(syncAssignmentItemSchema),
 });
 // POST /api/assignments - Assign worker to work

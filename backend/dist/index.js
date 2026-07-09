@@ -36,6 +36,9 @@ app.use('/api/dashboard', dashboard_js_1.default);
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', time: new Date() });
 });
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', time: new Date() });
+});
 // Global Error Handler
 app.use((err, req, res, next) => {
     console.error('Unhandled Error:', err);
@@ -44,4 +47,45 @@ app.use((err, req, res, next) => {
 // Start Server
 app.listen(PORT, () => {
     console.log(`Brahmi API Server is running on port ${PORT}`);
+    // ── Keep-Alive: prevent Render free-tier spin-down ──────────────────────
+    // Only activates when RENDER_BACKEND_URL is set (i.e. in production).
+    // Pings /health every 10 minutes so the dyno never goes idle.
+    const KEEP_ALIVE_URL = process.env.RENDER_BACKEND_URL
+        ? `${process.env.RENDER_BACKEND_URL}/health`
+        : null;
+    function isKeepAliveActive() {
+        const now = new Date();
+        // Convert to UTC milliseconds, then add IST offset (5.5 hours)
+        const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+        const istDate = new Date(utcMs + (3600000 * 5.5));
+        const hours = istDate.getHours();
+        const minutes = istDate.getMinutes();
+        const timeInMinutes = hours * 60 + minutes;
+        const startLimit = 6 * 60 + 30; // 6:30 AM
+        const endLimit = 23 * 60 + 59; // 11:59 PM
+        return timeInMinutes >= startLimit && timeInMinutes <= endLimit;
+    }
+    if (KEEP_ALIVE_URL) {
+        const INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+        console.log(`[keep-alive] Self-ping enabled → ${KEEP_ALIVE_URL} every 10 min (Active: 6:30 AM - 11:59 PM IST)`);
+        setInterval(async () => {
+            if (!isKeepAliveActive()) {
+                console.log(`[keep-alive] Skipping ping: current time is outside the 6:30 AM - 11:59 PM IST window.`);
+                return;
+            }
+            try {
+                const res = await fetch(KEEP_ALIVE_URL);
+                if (res.ok) {
+                    console.log(`[keep-alive] ✓ pinged at ${new Date().toISOString()}`);
+                }
+                else {
+                    console.warn(`[keep-alive] ✗ unexpected status ${res.status}`);
+                }
+            }
+            catch (err) {
+                console.warn(`[keep-alive] ✗ ping failed: ${err?.message ?? err}`);
+            }
+        }, INTERVAL_MS);
+    }
+    // ────────────────────────────────────────────────────────────────────────
 });

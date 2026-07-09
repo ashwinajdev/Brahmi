@@ -1,0 +1,19 @@
+name: Render Keep-Alive
+
+on:
+  schedule:
+    # Runs every 12 minutes from 6:30 AM to 11:59 PM IST (1:00 AM to 6:59 PM UTC)
+    # 1:00 AM UTC = 6:30 AM IST (First wake-up ping of the day)
+    # 6:48 PM UTC = 12:18 AM IST of the next day (Last ping before night rest)
+    - cron: '*/12 1-18 * * *'
+  workflow_dispatch: # Allows manual trigger from the GitHub Actions tab
+
+jobs:
+  ping-backend:
+    name: Ping Render Backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send GET Request to Health Check
+        run: |
+          echo "Pinging backend at $(date)"
+          curl -s --connect-timeout 60 --max-time 120 -o /dev/null -w "HTTP Status Code: %{http_code}\n" https://brahmi-2i1p.onrender.com/health

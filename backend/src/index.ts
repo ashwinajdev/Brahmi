@@ -37,6 +37,9 @@ app.use('/api/dashboard', dashboardRoutes);
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', time: new Date() });
 });
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', time: new Date() });
+});
 
 // Global Error Handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -55,11 +58,31 @@ app.listen(PORT, () => {
     ? `${process.env.RENDER_BACKEND_URL}/health`
     : null;
 
+  function isKeepAliveActive(): boolean {
+    const now = new Date();
+    // Convert to UTC milliseconds, then add IST offset (5.5 hours)
+    const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const istDate = new Date(utcMs + (3600000 * 5.5));
+
+    const hours = istDate.getHours();
+    const minutes = istDate.getMinutes();
+    const timeInMinutes = hours * 60 + minutes;
+
+    const startLimit = 6 * 60 + 30; // 6:30 AM
+    const endLimit = 23 * 60 + 59;  // 11:59 PM
+
+    return timeInMinutes >= startLimit && timeInMinutes <= endLimit;
+  }
+
   if (KEEP_ALIVE_URL) {
     const INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
-    console.log(`[keep-alive] Self-ping enabled → ${KEEP_ALIVE_URL} every 10 min`);
+    console.log(`[keep-alive] Self-ping enabled → ${KEEP_ALIVE_URL} every 10 min (Active: 6:30 AM - 11:59 PM IST)`);
 
     setInterval(async () => {
+      if (!isKeepAliveActive()) {
+        console.log(`[keep-alive] Skipping ping: current time is outside the 6:30 AM - 11:59 PM IST window.`);
+        return;
+      }
       try {
         const res = await fetch(KEEP_ALIVE_URL);
         if (res.ok) {
