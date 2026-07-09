@@ -42,7 +42,7 @@ export default function Login() {
       // Under the hood, log in as the default admin user
       const data = await api.post<LoginResponse>('/auth/login', {
         email: 'admin@brahmi.com',
-        password: 'password123',
+        password: '2525',
       });
       setAuth(data.user, data.token);
       addToast(`Welcome back, ${data.user.name}!`, 'success');
