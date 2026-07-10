@@ -147,10 +147,13 @@ export default function WorkerList() {
     if (!filteredAssignments) return grouped;
     for (const assignment of filteredAssignments) {
       const wId = assignment.work.id;
-      const existing = grouped.find(g => g.workId === wId);
+      const dateKey = new Date(assignment.assignedAt).toDateString();
+      const existing = grouped.find(g => g.workId === wId && new Date(g.assignedAt).toDateString() === dateKey);
       const fallbackAmt = assignment.amount !== null && assignment.amount !== undefined ? assignment.amount : 500;
       if (existing) {
-        existing.shifts.push(assignment.shift || 'Tiffin');
+        if (!existing.shifts.includes(assignment.shift || 'Tiffin')) {
+          existing.shifts.push(assignment.shift || 'Tiffin');
+        }
         existing.amount += fallbackAmt;
         existing.originalAssignments.push(assignment);
       } else {
@@ -662,16 +665,16 @@ export default function WorkerList() {
                   </div>
                 )}
               </div>
-                           <div className="overflow-x-auto">
+              <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50/50 dark:bg-slate-900/5 select-none">
-                      {isTableEditing && <th className="py-3 px-2 w-10 text-center"></th>}
-                      <th className="py-3 px-4 w-12 text-center">SI No.</th>
-                      <th className="py-3 px-4 w-24">Date</th>
-                      <th className="py-3 px-4 w-28">Shift</th>
-                      <th className="py-3 px-4 min-w-[200px]">Work</th>
-                      <th className="py-3 px-4 w-28 text-right">Amount</th>
+                      {isTableEditing && <th className="py-3 px-1 w-8 text-center"></th>}
+                      <th className="py-3 px-2 w-10 text-center">SI No.</th>
+                      <th className="py-3 px-2 w-20">Date</th>
+                      <th className="py-3 px-2 w-20">Shift</th>
+                      <th className="py-3 px-2 min-w-[100px]">Work</th>
+                      <th className="py-3 px-2 w-20 text-right">Amount</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200">
@@ -695,7 +698,7 @@ export default function WorkerList() {
                             return (
                               <tr key={assignment.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
                                 {isTableEditing && (
-                                  <td className="py-2 px-2 text-center">
+                                  <td className="py-2 px-1 text-center">
                                     <button
                                       type="button"
                                       onClick={() => handleDeleteAssignment(assignment)}
@@ -706,10 +709,10 @@ export default function WorkerList() {
                                     </button>
                                   </td>
                                 )}
-                                <td className="py-2 px-4 text-center text-slate-400 text-[11px] font-bold">{index + 1}</td>
+                                <td className="py-2 px-2 text-center text-slate-400 text-[11px] font-bold">{index + 1}</td>
                                 
                                 {/* Date Column */}
-                                <td className="py-2 px-4 text-slate-500 dark:text-slate-400 text-[11px] whitespace-nowrap">
+                                <td className="py-2 px-2 text-slate-500 dark:text-slate-400 text-[11px] whitespace-nowrap">
                                   {isTableEditing && edits ? (
                                     <input
                                       type="date"
@@ -727,7 +730,7 @@ export default function WorkerList() {
                                 </td>
 
                                 {/* Shift Column */}
-                                <td className="py-2 px-4">
+                                <td className="py-2 px-2">
                                   {isTableEditing && edits ? (
                                     <div className="flex gap-1 flex-wrap">
                                       {['Tiffin', 'Lunch', 'Dinner'].map((s) => {
@@ -767,7 +770,7 @@ export default function WorkerList() {
                                 </td>
 
                                 {/* Work Column */}
-                                <td className="py-2 px-4 text-sm font-extrabold text-slate-900 dark:text-white min-w-[200px]">
+                                <td className="py-2 px-2 text-xs font-extrabold text-slate-900 dark:text-white min-w-[100px] break-words">
                                   {isTableEditing && edits ? (
                                     <input
                                       type="text"
@@ -781,10 +784,10 @@ export default function WorkerList() {
                                 </td>
 
                                 {/* Amount Column */}
-                                <td className="py-2 px-4 text-right text-slate-750 dark:text-slate-350 font-bold w-28">
+                                <td className="py-2 px-2 text-right text-slate-750 dark:text-slate-350 font-bold w-20">
                                   {isTableEditing && edits ? (
-                                    <div className="flex items-center gap-1 justify-end">
-                                      <span className="text-xs text-slate-400 dark:text-slate-550 font-extrabold select-none mr-0.5">₹</span>
+                                    <div className="flex items-center gap-0.5 justify-end">
+                                      <span className="text-[10px] text-slate-400 dark:text-slate-550 font-extrabold select-none">₹</span>
                                       <button
                                         type="button"
                                         onClick={() => {
@@ -792,7 +795,7 @@ export default function WorkerList() {
                                           const newVal = Math.max(0, currentVal - 50);
                                           updateRowField(assignment.id, 'amount', newVal === 0 ? '' : newVal.toString());
                                         }}
-                                        className="w-6 h-6 flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg border border-slate-200/65 dark:border-slate-700/80 transition-colors select-none text-xs font-black cursor-pointer shadow-sm"
+                                        className="w-5 h-5 flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded border border-slate-200/65 dark:border-slate-700/80 transition-colors select-none text-[10px] font-black cursor-pointer shadow-sm"
                                       >
                                         -
                                       </button>
@@ -801,7 +804,7 @@ export default function WorkerList() {
                                         value={edits.amount}
                                         onChange={(e) => updateRowField(assignment.id, 'amount', e.target.value)}
                                         placeholder="500"
-                                        className="w-12 text-center px-1 py-1 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-750 dark:text-slate-250 focus:outline-none focus:ring-1 focus:ring-sky-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                        className="w-10 text-center px-0.5 py-0.5 text-xs rounded border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-750 dark:text-slate-250 focus:outline-none focus:ring-1 focus:ring-sky-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                       />
                                       <button
                                         type="button"
@@ -810,7 +813,7 @@ export default function WorkerList() {
                                           const newVal = currentVal + 50;
                                           updateRowField(assignment.id, 'amount', newVal.toString());
                                         }}
-                                        className="w-6 h-6 flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg border border-slate-200/65 dark:border-slate-700/80 transition-colors select-none text-xs font-black cursor-pointer shadow-sm"
+                                        className="w-5 h-5 flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded border border-slate-200/65 dark:border-slate-700/80 transition-colors select-none text-[10px] font-black cursor-pointer shadow-sm"
                                       >
                                         +
                                       </button>

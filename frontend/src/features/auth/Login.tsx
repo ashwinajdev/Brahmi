@@ -99,9 +99,7 @@ export default function Login() {
       <div className="max-w-md w-full space-y-8 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-8 rounded-2xl relative z-10 border border-white/80 dark:border-slate-800/80 shadow-[0_20px_50px_rgba(31,41,55,0.05)] hover:shadow-[0_24px_58px_rgba(31,41,55,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all duration-500 ease-out animate-slide-up">
         <div className="text-center">
           {/* Animated Logo Container */}
-          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-2xl bg-sky-600 shadow-[0_8px_20px_rgba(14,165,233,0.25)] hover:rotate-6 transition-transform duration-300 ease-out">
-            <span className="font-display font-bold text-3xl text-white select-none">B</span>
-          </div>
+          <img src="/brahmi-logo.png" alt="Brahmi Logo" className="mx-auto h-16 w-16 rounded-2xl object-cover shadow-[0_8px_20px_rgba(14,165,233,0.25)] hover:rotate-6 transition-transform duration-300 ease-out" />
           <h2 className="mt-6 text-2xl font-display font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
             Security Lock
           </h2>

@@ -28,9 +28,15 @@ interface WorkFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   editingWork?: Work | null;
+  defaultStatus?: 'pending' | 'in_progress' | 'completed';
 }
 
-export default function WorkFormModal({ isOpen, onClose, editingWork = null }: WorkFormModalProps) {
+export default function WorkFormModal({ 
+  isOpen, 
+  onClose, 
+  editingWork = null,
+  defaultStatus = 'pending'
+}: WorkFormModalProps) {
   const queryClient = useQueryClient();
   const { addToast } = useAppStore();
 
@@ -39,7 +45,7 @@ export default function WorkFormModal({ isOpen, onClose, editingWork = null }: W
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
-  const [status, setStatus] = useState<'pending' | 'in_progress' | 'completed'>('pending');
+  const [status, setStatus] = useState<'pending' | 'in_progress' | 'completed'>(defaultStatus);
   const [dueDate, setDueDate] = useState('');
   const [location, setLocation] = useState('');
 
@@ -76,12 +82,12 @@ export default function WorkFormModal({ isOpen, onClose, editingWork = null }: W
         setDescription('');
         setCategory('');
         setPriority('medium');
-        setStatus('pending');
+        setStatus(defaultStatus);
         setDueDate('');
         setLocation('');
       }
     }
-  }, [isOpen, editingWork]);
+  }, [isOpen, editingWork, defaultStatus]);
 
   const createWorkMutation = useMutation({
     mutationFn: (newWork: any) => api.post('/works', newWork),

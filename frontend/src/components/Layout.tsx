@@ -68,9 +68,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
       <aside className={`hidden md:flex flex-col w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shrink-0 h-screen sticky top-0 ${isOffline ? 'pt-8' : ''}`}>
         {/* Brand */}
         <div className="h-16 flex items-center gap-2.5 px-6 border-b border-slate-200 dark:border-slate-800">
-          <div className="h-9 w-9 rounded-lg bg-sky-600 flex items-center justify-center shadow-md">
-            <span className="font-display font-bold text-white text-lg">B</span>
-          </div>
+          <img src="/brahmi-logo.png" alt="Brahmi Logo" className="h-9 w-9 rounded-lg object-cover" />
           <span className="font-display font-extrabold text-xl tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
             Brahmi
           </span>
@@ -137,9 +135,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
         {/* Mobile Header */}
         <header className={`md:hidden h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 shrink-0 sticky top-0 z-30 ${isOffline ? 'mt-7' : ''}`}>
           <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-md bg-sky-600 flex items-center justify-center">
-              <span className="font-display font-bold text-white text-xs">B</span>
-            </div>
+            <img src="/brahmi-logo.png" alt="Brahmi Logo" className="h-7 w-7 rounded-md object-cover" />
             <h1 className="font-display font-bold text-md text-slate-900 dark:text-white">
               {getTitle()}
             </h1>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api.ts';
 import { useAppStore } from '../../lib/store.ts';
@@ -97,6 +97,10 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
     },
   });
 
+  const activeWorksOnly = useMemo(() => {
+    return works.filter((w) => w.status !== 'completed');
+  }, [works]);
+
   // Query: Get Workers roster for assignment
   const { data: roster = [] } = useQuery<Worker[]>({
     queryKey: ['workers', 'active'],
@@ -131,19 +135,20 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
 
 
 
-  // Mutation: Delete Work
+  // Mutation: Delete/Remove Work (Mark as completed to archive from active list and preserve history)
   const deleteWorkMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/works/${id}`),
+    mutationFn: (id: string) => api.put(`/works/${id}`, { status: 'completed' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['works'] });
+      queryClient.invalidateQueries({ queryKey: ['completedWorks'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       queryClient.invalidateQueries({ queryKey: ['worker-history'] });
       queryClient.invalidateQueries({ queryKey: ['workers'] });
-      addToast('Work task deleted successfully', 'info');
+      addToast('Work task completed and removed from active list', 'success');
       setSelectedWorkId(null);
       if (onClearSelection) onClearSelection();
     },
-    onError: (err: any) => addToast(err.message || 'Failed to delete work', 'error'),
+    onError: (err: any) => addToast(err.message || 'Failed to remove work task', 'error'),
   });
 
 
@@ -182,9 +187,9 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
 
   const handleDeleteWork = (id: string) => {
     showConfirm({
-      title: 'Delete Task?',
-      message: 'Are you sure you want to permanently delete this task? All history logs will be lost.',
-      confirmText: 'Delete',
+      title: 'Remove Task?',
+      message: 'Are you sure you want to remove this task from the active list? Its work history and logs will be preserved in the history tab.',
+      confirmText: 'Remove',
       isDestructive: true,
       onConfirm: () => deleteWorkMutation.mutate(id),
     });
@@ -277,7 +282,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
           {/* Mobile Tab Selector */}
           <div className="flex md:hidden bg-slate-100 dark:bg-slate-950 p-1 rounded-2xl border border-slate-200/60 dark:border-slate-850 gap-1 mb-2 select-none">
             {(['today', 'tomorrow', 'upcoming'] as const).map((tab) => {
-              const count = works.filter((w) => {
+              const count = activeWorksOnly.filter((w) => {
                 if (!w.dueDate) return tab === 'upcoming';
                 const taskDate = new Date(w.dueDate);
                 if (isNaN(taskDate.getTime())) return tab === 'upcoming';
@@ -342,7 +347,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
           {/* Columns Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {(['today', 'tomorrow', 'upcoming'] as const).map((columnGroup) => {
-              const columnTasks = works.filter((w) => {
+              const columnTasks = activeWorksOnly.filter((w) => {
                 if (!w.dueDate) return columnGroup === 'upcoming';
                 const taskDate = new Date(w.dueDate);
                 if (isNaN(taskDate.getTime())) return columnGroup === 'upcoming';
@@ -434,14 +439,14 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                {works.length === 0 ? (
+                {activeWorksOnly.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="p-8 text-center text-slate-400">
                       No work tasks registered or matching search filters.
                     </td>
                   </tr>
                 ) : (
-                  works.map((work) => (
+                  activeWorksOnly.map((work) => (
                     <tr
                       key={work.id}
                       className="hover:bg-slate-50 dark:hover:bg-slate-800/10 cursor-pointer transition-colors"
@@ -473,7 +478,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                           <button
                             onClick={() => handleDeleteWork(work.id)}
                             className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
-                            title="Delete task"
+                            title="Remove task"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -493,6 +498,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
         isOpen={isCreateModalOpen}
         onClose={closeCreateModal}
         editingWork={editingWork}
+        defaultStatus="pending"
       />
 
       {/* Task Details & Assignment Drawer/Modal */}
@@ -555,7 +561,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                         onClick={() => handleDeleteWork(workDetails.id)}
                         className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl text-xs font-semibold transition-all cursor-pointer select-none"
                       >
-                        <Trash2 className="w-3.5 h-3.5" /> Delete Task
+                        <Trash2 className="w-3.5 h-3.5" /> Remove Task
                       </button>
                     </div>
                   </div>

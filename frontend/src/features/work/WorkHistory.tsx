@@ -536,10 +536,10 @@ export default function WorkHistory() {
                           <table className="w-full text-left border-collapse">
                             <thead>
                               <tr className="border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">
-                                <th className="py-2.5 px-4 w-12 text-center">SI No.</th>
-                                <th className="py-2.5 px-4 w-36">Shift</th>
-                                <th className="py-2.5 px-4 min-w-[200px]">Worker Name</th>
-                                <th className="py-2.5 px-4 w-40 text-right">Amount</th>
+                                <th className="py-2.5 px-2 w-10 text-center">SI No.</th>
+                                <th className="py-2.5 px-2 w-20">Shift</th>
+                                <th className="py-2.5 px-2 min-w-[120px]">Worker Name</th>
+                                <th className="py-2.5 px-2 w-24 text-right">Amount</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
@@ -547,10 +547,10 @@ export default function WorkHistory() {
                                 const edits = editedDetails[item.id];
                                 return (
                                   <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                                    <td className="py-3 px-4 text-center text-slate-400 text-[11px] font-bold">{index + 1}</td>
+                                    <td className="py-3 px-2 text-center text-slate-400 text-[11px] font-bold">{index + 1}</td>
                                     
                                     {/* Shift Column */}
-                                    <td className="py-3 px-4">
+                                    <td className="py-3 px-2">
                                       {isDetailEditing && edits ? (
                                         <div className="flex gap-1 flex-wrap">
                                           {['Tiffin', 'Lunch', 'Dinner'].map((s) => {
@@ -597,22 +597,22 @@ export default function WorkHistory() {
                                     </td>
 
                                     {/* Worker Name Column */}
-                                    <td className="py-3 px-4">
+                                    <td className="py-3 px-2">
                                       <div className="flex items-center gap-2">
                                         <img
                                           src={item.workerAvatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(item.workerName)}`}
                                           alt={item.workerName}
-                                          className="w-6 h-6 rounded-full object-cover border"
+                                          className="w-5 h-5 rounded-full object-cover border"
                                         />
-                                        <span className="text-slate-800 font-extrabold">{item.workerName}</span>
+                                        <span className="text-slate-800 font-extrabold truncate max-w-[110px]">{item.workerName}</span>
                                       </div>
                                     </td>
 
                                     {/* Amount Column */}
-                                    <td className="py-3 px-4 text-right font-bold w-40">
+                                    <td className="py-3 px-2 text-right font-bold w-24">
                                       {isDetailEditing && edits ? (
-                                        <div className="flex items-center gap-1 justify-end">
-                                          <span className="text-xs text-slate-400 font-extrabold select-none mr-0.5">₹</span>
+                                        <div className="flex items-center gap-0.5 justify-end">
+                                          <span className="text-[10px] text-slate-400 font-extrabold select-none mr-0.5">₹</span>
                                           <button
                                             type="button"
                                             onClick={() => {
@@ -620,7 +620,7 @@ export default function WorkHistory() {
                                               const newVal = Math.max(0, currentVal - 50);
                                               updateRowDetailField(item.id, 'amount', newVal === 0 ? '' : newVal.toString());
                                             }}
-                                            className="w-6 h-6 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg border border-slate-200/65 transition-colors select-none text-xs font-black cursor-pointer shadow-sm"
+                                            className="w-5 h-5 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 rounded border border-slate-200/65 transition-colors select-none text-[10px] font-black cursor-pointer shadow-sm"
                                           >
                                             -
                                           </button>
@@ -629,7 +629,7 @@ export default function WorkHistory() {
                                             value={edits.amount}
                                             onChange={(e) => updateRowDetailField(item.id, 'amount', e.target.value)}
                                             placeholder="-"
-                                            className="w-12 text-center px-1 py-1 text-xs rounded-lg border border-slate-200 bg-white text-slate-750 focus:outline-none focus:ring-1 focus:ring-sky-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-semibold"
+                                            className="w-10 text-center px-0.5 py-0.5 text-xs rounded border border-slate-200 bg-white text-slate-750 focus:outline-none focus:ring-1 focus:ring-sky-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-semibold"
                                           />
                                           <button
                                             type="button"
@@ -638,7 +638,7 @@ export default function WorkHistory() {
                                               const newVal = currentVal + 50;
                                               updateRowDetailField(item.id, 'amount', newVal.toString());
                                             }}
-                                            className="w-6 h-6 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg border border-slate-200/65 transition-colors select-none text-xs font-black cursor-pointer shadow-sm"
+                                            className="w-5 h-5 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 rounded border border-slate-200/65 transition-colors select-none text-[10px] font-black cursor-pointer shadow-sm"
                                           >
                                             +
                                           </button>
@@ -690,10 +690,10 @@ export default function WorkHistory() {
   return (
     <div className="space-y-6">
       {/* Search and Action Bar */}
-      <div className="glass-panel p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white">
+      <div className="glass-panel p-4 rounded-2xl border border-slate-200 flex items-center justify-between bg-white">
         {/* Search & Add */}
-        <div className="flex items-center gap-2 w-full sm:w-auto flex-grow sm:flex-initial">
-          <div className="relative w-full sm:w-72 shrink-0">
+        <div className="flex items-center gap-2 w-full flex-nowrap">
+          <div className="relative flex-grow min-w-0 sm:max-w-xs">
             <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
               <Search className="w-4 h-4" />
             </span>
@@ -740,43 +740,52 @@ export default function WorkHistory() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
-          {filteredWorks.map((work) => (
+          {filteredWorks.map((work, index) => (
             <div 
               key={work.id} 
               onClick={() => setSelectedWorkId(work.id)}
               className="bg-white border border-slate-200 hover:border-sky-300 dark:hover:border-sky-400 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-4 group"
             >
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    {(work as any).occurrencesCount > 1 && (
+                {(work as any).occurrencesCount > 1 && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
                       <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase bg-sky-500/10 text-sky-600 rounded-md border border-sky-500/20">
                         {(work as any).occurrencesCount} Instances
                       </span>
-                    )}
-                  </div>
-                  {getPriorityBadge(work.priority)}
-                </div>
-                <h4 className="font-extrabold text-slate-900 group-hover:text-sky-600 transition-colors text-base tracking-tight leading-snug text-left">
-                  {work.title}
-                </h4>
-                <p className="text-xs text-slate-450 line-clamp-2 text-left">
-                  {work.description || 'No description provided.'}
-                </p>
-              </div>
-
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-450 font-bold">
-                <div className="flex items-center gap-1.5">
-                  <Tag className="w-3.5 h-3.5 text-slate-350" />
-                  <span>{work.category || 'General'}</span>
-                </div>
-                {work.location && (
-                  <div className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-slate-350" />
-                    <span>{work.location}</span>
+                    </div>
                   </div>
                 )}
+                <h4 className="font-extrabold text-slate-900 group-hover:text-sky-600 transition-colors text-base tracking-tight leading-snug text-left">
+                  {index + 1}. {work.title}
+                </h4>
+                {work.description && 
+                 work.description !== 'General Task Details' && 
+                 work.description !== 'No description provided.' && (
+                  <p className="text-xs text-slate-450 line-clamp-2 text-left">
+                    {work.description}
+                  </p>
+                )}
               </div>
+
+              {(work.location || (work.category && work.category !== 'General')) && (
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-455 font-bold">
+                  {work.category && work.category !== 'General' ? (
+                    <div className="flex items-center gap-1.5">
+                      <Tag className="w-3.5 h-3.5 text-slate-350" />
+                      <span>{work.category}</span>
+                    </div>
+                  ) : (
+                    <div></div>
+                  )}
+                  {work.location && (
+                    <div className="flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-slate-350" />
+                      <span>{work.location}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -784,6 +793,7 @@ export default function WorkHistory() {
       <WorkFormModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
+        defaultStatus="completed"
       />
     </div>
   );
