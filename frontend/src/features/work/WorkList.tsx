@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api.ts';
 import { useAppStore } from '../../lib/store.ts';
 import { formatDate } from '../../lib/utils.ts';
+import WorkFormModal from './WorkFormModal.tsx';
 import {
   Briefcase,
   Search,
@@ -15,10 +16,7 @@ import {
   Trash2,
   List,
   Kanban,
-  AlertCircle,
-  Clock,
-  Play,
-  CheckCircle2
+  AlertCircle
 } from 'lucide-react';
 
 interface Worker {
@@ -67,22 +65,13 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
   const [activeMobileTab, setActiveMobileTab] = useState<'today' | 'tomorrow' | 'upcoming'>('today');
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
 
   // Modals state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingWork, setEditingWork] = useState<Work | null>(null);
   const [selectedWorkId, setSelectedWorkId] = useState<string | null>(initialSelectedWorkId);
 
-  // Form State
-  const [title, setTitle] = useState('');
-  const [customTitleText, setCustomTitleText] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
-  const [status, setStatus] = useState<'pending' | 'in_progress' | 'completed'>('pending');
-  const [dueDate, setDueDate] = useState('');
-  const [location, setLocation] = useState('');
+
 
   // Worker selector command-palette state
   const [isEditingAssignments, setIsEditingAssignments] = useState(false);
@@ -100,11 +89,10 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
 
   // Query: Get Work items
   const { data: works = [], isLoading, isError, error } = useQuery<Work[]>({
-    queryKey: ['works', searchTerm, statusFilter],
+    queryKey: ['works', searchTerm],
     queryFn: () => {
       const params = new URLSearchParams();
       if (searchTerm) params.append('search', searchTerm);
-      if (statusFilter) params.append('status', statusFilter);
       return api.get<Work[]>(`/works?${params.toString()}`);
     },
   });
@@ -141,32 +129,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
 
 
 
-  // Mutation: Create Work
-  const createWorkMutation = useMutation({
-    mutationFn: (newWork: any) => api.post('/works', newWork),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['works'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      addToast('Work task created successfully', 'success');
-      closeCreateModal();
-    },
-    onError: (err: any) => addToast(err.message || 'Failed to create work', 'error'),
-  });
 
-  // Mutation: Update Work
-  const updateWorkMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => api.put(`/works/${id}`, data),
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ['works'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      if (selectedWorkId === data.id) {
-        queryClient.invalidateQueries({ queryKey: ['work-details', selectedWorkId] });
-      }
-      addToast('Work task updated successfully', 'success');
-      closeCreateModal();
-    },
-    onError: (err: any) => addToast(err.message || 'Failed to update work', 'error'),
-  });
 
   // Mutation: Delete Work
   const deleteWorkMutation = useMutation({
@@ -183,19 +146,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
     onError: (err: any) => addToast(err.message || 'Failed to delete work', 'error'),
   });
 
-  // Mutation: Change Work Status (Drag & Drop or quick button)
-  const changeStatusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: 'pending' | 'in_progress' | 'completed' }) =>
-      api.put(`/works/${id}`, { status }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['works'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['work-details'] });
-      queryClient.invalidateQueries({ queryKey: ['worker-history'] });
-      queryClient.invalidateQueries({ queryKey: ['workers'] });
-    },
-    onError: (err: any) => addToast(err.message || 'Failed to change task status', 'error'),
-  });
+
 
   // Mutation: Synchronize Worker Assignments (Batch save)
   const syncAssignmentsMutation = useMutation({
@@ -216,76 +167,17 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
 
   const openAddModal = () => {
     setEditingWork(null);
-    setTitle('');
-    setCustomTitleText('');
-    setDescription('');
-    setCategory('');
-    setPriority('medium');
-    setStatus('pending');
-    setDueDate('');
-    setLocation('');
     setIsCreateModalOpen(true);
   };
 
   const openEditModal = (work: Work) => {
     setEditingWork(work);
-    const standardPlaces = [
-      "Main Office Lobby",
-      "Server Room - Floor 3",
-      "Breakroom - Floor 1",
-      "Conference Room 204",
-      "Building A Lobby",
-      "Building B Warehouse",
-      "Cafeteria - Floor 2",
-      "Whole Campus"
-    ];
-    if (!standardPlaces.includes(work.title)) {
-      setTitle('custom');
-      setCustomTitleText(work.title);
-    } else {
-      setTitle(work.title);
-      setCustomTitleText('');
-    }
-    setDescription(work.description);
-    setCategory(work.category);
-    setPriority(work.priority);
-    setStatus(work.status);
-    // Format date for datetime-local input (YYYY-MM-DD)
-    const date = new Date(work.dueDate);
-    const formattedDate = date.toISOString().split('T')[0];
-    setDueDate(formattedDate);
-    setLocation(work.location || '');
     setIsCreateModalOpen(true);
   };
 
   const closeCreateModal = () => {
     setIsCreateModalOpen(false);
     setEditingWork(null);
-  };
-
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const finalTitle = title === 'custom' ? customTitleText.trim() : title;
-    if (!finalTitle || !dueDate) {
-      addToast('Please fill in all required fields', 'error');
-      return;
-    }
-
-    const payload = {
-      title: finalTitle,
-      description: description || "General Task Details",
-      category: category || "General",
-      priority: priority || "medium",
-      status: status || "pending",
-      dueDate,
-      location: location || "",
-    };
-
-    if (editingWork) {
-      updateWorkMutation.mutate({ id: editingWork.id, data: payload });
-    } else {
-      createWorkMutation.mutate(payload);
-    }
   };
 
   const handleDeleteWork = (id: string) => {
@@ -298,9 +190,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
     });
   };
 
-  const handleQuickStatusChange = (id: string, newStatus: 'pending' | 'in_progress' | 'completed') => {
-    changeStatusMutation.mutate({ id, status: newStatus });
-  };
+
 
   const handleSaveAssignments = () => {
     if (!selectedWorkId) return;
@@ -337,19 +227,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
             </button>
           </div>
 
-          {/* Status Filter for list view */}
-          {viewMode === 'list' && (
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer"
-            >
-              <option value="">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="in_progress">In Progress</option>
-              <option value="completed">Completed</option>
-            </select>
-          )}
+
         </div>
 
         {/* Right Side: View toggle Action */}
@@ -533,7 +411,6 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                           key={work.id}
                           work={work}
                           onClick={() => setSelectedWorkId(work.id)}
-                          onQuickStatusChange={handleQuickStatusChange}
                         />
                       ))
                     )}
@@ -550,17 +427,16 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
             <table className="w-full text-left border-collapse text-xs md:text-sm">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-semibold bg-slate-50 dark:bg-slate-900/40 select-none">
-                  <th className="p-4">Work Place</th>
-                  <th className="p-4">Date</th>
-                  <th className="p-4">Assigned Workers</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4 text-right">Actions</th>
+                  <th className="p-4 bg-slate-50 dark:bg-slate-900/40 rounded-tl-2xl">Work Place</th>
+                  <th className="p-4 bg-slate-50 dark:bg-slate-900/40">Date</th>
+                  <th className="p-4 bg-slate-50 dark:bg-slate-900/40">Assigned Workers</th>
+                  <th className="p-4 text-right bg-slate-50 dark:bg-slate-900/40 rounded-tr-2xl">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                 {works.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-8 text-center text-slate-400">
+                    <td colSpan={4} className="p-8 text-center text-slate-400">
                       No work tasks registered or matching search filters.
                     </td>
                   </tr>
@@ -584,11 +460,6 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                       </td>
                       <td className="p-4" onClick={(e) => e.stopPropagation()}>
                         <AvatarStack workers={work.assignedWorkers} />
-                      </td>
-                      <td className="p-4">
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase badge-${work.status}`}>
-                          {work.status.replace('_', ' ')}
-                        </span>
                       </td>
                       <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
@@ -618,122 +489,11 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
       )}
 
       {/* Task Creation/Editing Modal */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: 60 }}>
-          <div
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative animate-slide-up"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={closeCreateModal}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <h3 className="text-md font-display font-extrabold text-slate-900 dark:text-white mb-6">
-              {editingWork ? 'Edit Work Place Details' : 'Add Work Place'}
-            </h3>
-
-            <form onSubmit={handleFormSubmit} className="space-y-4">
-              {/* Title */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                  Work Place *
-                </label>
-                <select
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm"
-                >
-                  <option value="" disabled>Select a Work Place...</option>
-                  {(() => {
-                    const standardPlaces = [
-                      "Main Office Lobby",
-                      "Server Room - Floor 3",
-                      "Breakroom - Floor 1",
-                      "Conference Room 204",
-                      "Building A Lobby",
-                      "Building B Warehouse",
-                      "Cafeteria - Floor 2",
-                      "Whole Campus"
-                    ];
-                    const dbPlaces = works.map((w) => w.title);
-                    const allPlaces = Array.from(new Set([...standardPlaces, ...dbPlaces]));
-                    if (title && title !== 'custom' && !allPlaces.includes(title)) {
-                      allPlaces.push(title);
-                    }
-                    allPlaces.sort((a, b) => a.localeCompare(b));
-                    return (
-                      <>
-                        {allPlaces.map((p) => (
-                          <option key={p} value={p}>
-                            {p}
-                          </option>
-                        ))}
-                        <option value="custom">+ Add Custom Work Place...</option>
-                      </>
-                    );
-                  })()}
-                </select>
-              </div>
-
-              {/* Custom Title Input */}
-              {title === 'custom' && (
-                <div className="animate-scale-in">
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                    New Work Place Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Enter custom work place name..."
-                    value={customTitleText}
-                    onChange={(e) => setCustomTitleText(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm"
-                  />
-                </div>
-              )}
-
-              {/* Due Date */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                  Date *
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm"
-                />
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 justify-end pt-4 border-t border-slate-100 dark:border-slate-800/80 mt-4">
-                <button
-                  type="button"
-                  onClick={closeCreateModal}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold cursor-pointer hover:bg-slate-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={createWorkMutation.isPending || updateWorkMutation.isPending}
-                  className="px-4 py-2 bg-sky-600 text-white rounded-xl text-xs font-semibold cursor-pointer shadow-md hover:bg-sky-700 transition-colors flex items-center gap-1.5"
-                >
-                  {(createWorkMutation.isPending || updateWorkMutation.isPending) && (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  )}
-                  {editingWork ? 'Save Changes' : 'Add Task'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <WorkFormModal
+        isOpen={isCreateModalOpen}
+        onClose={closeCreateModal}
+        editingWork={editingWork}
+      />
 
       {/* Task Details & Assignment Drawer/Modal */}
       {selectedWorkId && (
@@ -1192,51 +952,24 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
 interface WorkCardProps {
   work: Work;
   onClick: () => void;
-  onQuickStatusChange: (id: string, status: 'pending' | 'in_progress' | 'completed') => void;
 }
 
-function getStatusBadge(status: string) {
-  switch (status) {
-    case 'completed':
-      return (
-        <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase bg-green-500/10 text-green-600 dark:text-green-400 rounded border border-green-500/20 whitespace-nowrap">
-          Done
-        </span>
-      );
-    case 'in_progress':
-      return (
-        <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded border border-blue-500/20 whitespace-nowrap">
-          Doing
-        </span>
-      );
-    default:
-      return (
-        <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded border border-amber-500/20 whitespace-nowrap">
-          Pending
-        </span>
-      );
-  }
-}
-
-function WorkCard({ work, onClick, onQuickStatusChange }: WorkCardProps) {
-  // Prevent click propagation when clicking status switcher buttons
+function WorkCard({ work, onClick }: WorkCardProps) {
+  // Prevent click propagation when clicking stack
   const stopProp = (e: React.MouseEvent) => e.stopPropagation();
 
   return (
     <div
       onClick={onClick}
-      className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-850 p-3 rounded-2xl shadow-sm hover:shadow-md dark:hover:border-slate-800/80 hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between min-h-[85px]"
+      className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-850 p-3 rounded-2xl shadow-sm hover:shadow-md dark:hover:border-slate-800/80 hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between min-h-[85px]"
     >
       <div className="flex items-start justify-between gap-3">
         <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors leading-normal line-clamp-2">
           {work.title}
         </h4>
-        <div className="shrink-0 pt-0.5">
-          {getStatusBadge(work.status)}
-        </div>
       </div>
 
-      {/* Footer Block: Date, Avatars, and Minimalist Actions */}
+      {/* Footer Block: Date, Avatars */}
       <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 font-bold border-t border-slate-50 dark:border-slate-800/40 pt-2">
         <span className="flex items-center gap-1">
           <Calendar className="w-3.5 h-3.5 text-sky-400/80" />
@@ -1245,42 +978,6 @@ function WorkCard({ work, onClick, onQuickStatusChange }: WorkCardProps) {
         
         <div className="flex items-center gap-2.5" onClick={stopProp}>
           <AvatarStack workers={work.assignedWorkers} />
-          
-          {/* Divider */}
-          {work.assignedWorkers && work.assignedWorkers.length > 0 && (
-            <div className="w-[1px] h-3 bg-slate-200 dark:bg-slate-800" />
-          )}
-
-          {/* Minimalist Round Icon Switchers */}
-          <div className="flex items-center gap-1">
-            {work.status !== 'pending' && (
-              <button
-                onClick={() => onQuickStatusChange(work.id, 'pending')}
-                className="p-1 text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-md transition-all cursor-pointer"
-                title="Move to Pending"
-              >
-                <Clock className="w-3.5 h-3.5" />
-              </button>
-            )}
-            {work.status !== 'in_progress' && (
-              <button
-                onClick={() => onQuickStatusChange(work.id, 'in_progress')}
-                className="p-1 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-md transition-all cursor-pointer"
-                title="Start Task (Doing)"
-              >
-                <Play className="w-3.5 h-3.5" />
-              </button>
-            )}
-            {work.status !== 'completed' && (
-              <button
-                onClick={() => onQuickStatusChange(work.id, 'completed')}
-                className="p-1 text-slate-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-500/10 rounded-md transition-all cursor-pointer"
-                title="Mark Completed (Done)"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
         </div>
       </div>
     </div>

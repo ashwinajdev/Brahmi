@@ -13,8 +13,10 @@ import {
   ArrowLeft,
   Check,
   X,
-  Edit2
+  Edit2,
+  Plus
 } from 'lucide-react';
+import WorkFormModal from './WorkFormModal.tsx';
 
 interface Worker {
   id: string;
@@ -43,6 +45,7 @@ export default function WorkHistory() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedWorkId, setSelectedWorkId] = useState<string | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Detail View Date Filters State
   const [dateFilterType, setDateFilterType] = useState<'all' | 'specific' | 'this-month' | 'last-month' | 'custom'>('all');
@@ -59,7 +62,6 @@ export default function WorkHistory() {
     queryKey: ['completedWorks', searchTerm],
     queryFn: () => {
       const params = new URLSearchParams();
-      params.append('status', 'completed');
       if (searchTerm) params.append('search', searchTerm);
       return api.get<Work[]>(`/works?${params.toString()}`);
     },
@@ -396,9 +398,6 @@ export default function WorkHistory() {
             {/* Work Summary card */}
             <div className="glass-panel p-5 rounded-2xl border border-slate-200 bg-white space-y-3 relative select-none">
               <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase bg-emerald-500/10 text-emerald-600 rounded-md border border-emerald-500/20">
-                  Completed
-                </span>
                 {getPriorityBadge(workDetails.priority)}
               </div>
               <h3 className="font-extrabold text-slate-900 text-lg leading-snug tracking-tight">
@@ -692,18 +691,26 @@ export default function WorkHistory() {
     <div className="space-y-6">
       {/* Search and Action Bar */}
       <div className="glass-panel p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white">
-        {/* Search */}
-        <div className="relative w-full sm:w-72 shrink-0">
-          <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
-            <Search className="w-4 h-4" />
-          </span>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500"
-            placeholder="Search completed tasks..."
-          />
+        {/* Search & Add */}
+        <div className="flex items-center gap-2 w-full sm:w-auto flex-grow sm:flex-initial">
+          <div className="relative w-full sm:w-72 shrink-0">
+            <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+              <Search className="w-4 h-4" />
+            </span>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              placeholder="Search tasks..."
+            />
+          </div>
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex items-center justify-center gap-1.5 px-3 py-2 bg-sky-600 text-white rounded-xl text-xs font-semibold cursor-pointer shadow-md hover:bg-sky-700 transition-colors select-none whitespace-nowrap shrink-0"
+          >
+            <Plus className="w-3.5 h-3.5" /> Add Work
+          </button>
         </div>
       </div>
 
@@ -711,7 +718,7 @@ export default function WorkHistory() {
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-20 text-slate-400">
           <Loader2 className="w-8 h-8 animate-spin text-sky-500 mb-2" />
-          <span className="text-xs font-semibold">Loading completed tasks...</span>
+          <span className="text-xs font-semibold">Loading tasks...</span>
         </div>
       ) : isError ? (
         <div className="flex flex-col items-center justify-center py-12 text-center p-6 bg-white border border-slate-200 rounded-2xl">
@@ -724,11 +731,11 @@ export default function WorkHistory() {
       ) : filteredWorks.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center p-6 bg-white border border-slate-200 rounded-3xl">
           <Briefcase className="w-10 h-10 text-slate-350 mb-3" />
-          <h4 className="text-sm font-bold text-slate-900">No Completed Tasks Found</h4>
+          <h4 className="text-sm font-bold text-slate-900">No Tasks Found</h4>
           <p className="text-xs text-slate-400 mt-1">
             {searchTerm 
               ? 'Try refining your search terms.' 
-              : 'Tasks marked as "Done" on the board will appear here.'}
+              : 'Tasks will appear here.'}
           </p>
         </div>
       ) : (
@@ -742,9 +749,6 @@ export default function WorkHistory() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase bg-emerald-500/10 text-emerald-600 rounded-md border border-emerald-500/20">
-                      Completed
-                    </span>
                     {(work as any).occurrencesCount > 1 && (
                       <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase bg-sky-500/10 text-sky-600 rounded-md border border-sky-500/20">
                         {(work as any).occurrencesCount} Instances
@@ -777,6 +781,10 @@ export default function WorkHistory() {
           ))}
         </div>
       )}
+      <WorkFormModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+      />
     </div>
   );
 }
