@@ -57,10 +57,63 @@ export default defineConfig({
               },
             },
           },
+          {
+            // Cache DiceBear avatar SVGs to avoid repeat network requests
+            urlPattern: /^https:\/\/api\.dicebear\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'dicebear-avatars-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 7 * 24 * 60 * 60, // 7 Days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
         ],
       },
     }),
   ],
+  build: {
+    // Target modern browsers for better tree-shaking and smaller output
+    target: 'es2020',
+    // Minify with esbuild (default, fastest) — explicitly set for clarity
+    minify: 'esbuild',
+    cssMinify: true,
+    // Raise chunk size warning limit slightly (individual vendor chunks may be 400-500 KiB)
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        // Manual chunk splitting: separate heavy vendor libs from app code.
+        // Each chunk gets its own cache fingerprint so browsers re-download
+        // only the chunk that actually changed between deployments.
+        manualChunks: {
+          // React core — changes rarely, very long cache lifetime
+          'vendor-react': ['react', 'react-dom'],
+          // State management & data fetching
+          'vendor-query': ['@tanstack/react-query', 'zustand'],
+          // Radix UI primitives (large library, rarely changes)
+          'vendor-radix': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-label',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-select',
+            '@radix-ui/react-slot',
+            '@radix-ui/react-switch',
+          ],
+          // Lucide icons (large icon library)
+          'vendor-lucide': ['lucide-react'],
+          // Form handling
+          'vendor-forms': ['react-hook-form', 'zod'],
+          // Utilities
+          'vendor-utils': ['clsx', 'tailwind-merge'],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     proxy: {

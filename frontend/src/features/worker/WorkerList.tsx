@@ -514,7 +514,9 @@ export default function WorkerList() {
               <div className="flex items-start gap-4 min-w-0 flex-grow">
                 <img
                   src={historyData.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(historyData.name)}`}
-                  alt={historyData.name}
+                  alt={`${historyData.name} profile photo`}
+                  loading="eager"
+                  decoding="async"
                   className="w-14 h-14 rounded-xl object-cover border border-slate-100 dark:border-slate-800 shrink-0"
                 />
                 <div className="min-w-0 flex-grow">
@@ -585,10 +587,11 @@ export default function WorkerList() {
               {/* Delete button absolute-positioned in the top-right corner */}
               <button
                 onClick={() => handleDeleteWorker(historyData)}
+                aria-label={`Delete worker profile for ${historyData.name}`}
                 className="absolute top-5 right-5 p-1.5 text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 hover:bg-red-500/10 border border-slate-200 dark:border-slate-800 rounded-lg transition-all cursor-pointer shadow-sm hover:shadow shrink-0"
                 title="Delete Worker"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
               </button>
             </div>
 
@@ -702,10 +705,11 @@ export default function WorkerList() {
                                     <button
                                       type="button"
                                       onClick={() => handleDeleteAssignment(assignment)}
+                                      aria-label={`Delete log entry for ${assignment.workTitle}`}
                                       className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-all cursor-pointer"
                                       title="Delete this record"
                                     >
-                                      <Trash2 className="w-3.5 h-3.5" />
+                                      <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                                     </button>
                                   </td>
                                 )}
@@ -932,7 +936,9 @@ export default function WorkerList() {
                   <div className="flex items-start gap-4 min-w-0 flex-grow">
                     <img
                       src={worker.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(worker.name)}`}
-                      alt={worker.name}
+                      alt={`${worker.name} profile photo`}
+                      loading="lazy"
+                      decoding="async"
                       className="w-14 h-14 rounded-2xl object-cover shrink-0 border border-slate-100 dark:border-slate-800"
                     />
                     <div className="min-w-0 space-y-1 flex-grow">
@@ -974,15 +980,17 @@ export default function WorkerList() {
                 {/* Active Toggle Switch */}
                 <button
                   onClick={() => handleToggleActive(worker)}
+                  aria-label={`${worker.isActive ? 'Deactivate' : 'Activate'} ${worker.name}`}
+                  aria-pressed={worker.isActive}
                   className="flex items-center gap-1 text-[10px] font-bold text-slate-500 dark:text-slate-400 cursor-pointer"
                 >
                   {worker.isActive ? (
                     <>
-                      <ToggleRight className="w-5 h-5 text-green-500" /> Active
+                      <ToggleRight className="w-5 h-5 text-green-500" aria-hidden="true" /> Active
                     </>
                   ) : (
                     <>
-                      <ToggleLeft className="w-5 h-5 text-slate-400 dark:text-slate-600" /> Inactive
+                      <ToggleLeft className="w-5 h-5 text-slate-400 dark:text-slate-600" aria-hidden="true" /> Inactive
                     </>
                   )}
                 </button>
@@ -991,10 +999,11 @@ export default function WorkerList() {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => openEditModal(worker)}
+                    aria-label={`Edit details for ${worker.name}`}
                     className="p-1.5 text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
                     title="Edit Worker Info"
                   >
-                    <Edit2 className="w-3.5 h-3.5" />
+                    <Edit2 className="w-3.5 h-3.5" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -1012,9 +1021,10 @@ export default function WorkerList() {
           >
             <button
               onClick={closeModal}
+              aria-label="Close worker form"
               className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
 
             <h3 className="text-md font-display font-extrabold text-slate-900 dark:text-white mb-6">
@@ -1088,7 +1098,9 @@ export default function WorkerList() {
                 <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-900/40 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
                   <img
                     src={avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name || 'Worker')}`}
-                    alt="Preview"
+                    alt={`Preview of ${name || 'worker'} photo`}
+                    loading="lazy"
+                    decoding="async"
                     className="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-slate-800 shrink-0"
                   />
                   <div className="flex flex-col gap-1.5 min-w-0 flex-grow">

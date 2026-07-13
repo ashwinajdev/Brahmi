@@ -68,14 +68,14 @@ export default function Layout({ children, activeTab }: LayoutProps) {
       <aside className={`hidden md:flex flex-col w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shrink-0 h-screen sticky top-0 ${isOffline ? 'pt-8' : ''}`}>
         {/* Brand */}
         <div className="h-16 flex items-center gap-2.5 px-6 border-b border-slate-200 dark:border-slate-800">
-          <img src="/brahmi-logo.png" alt="Brahmi Logo" className="h-9 w-9 rounded-lg object-cover" />
+          <img src="/brahmi-logo.png" alt="Brahmi Logo" loading="eager" decoding="async" className="h-9 w-9 rounded-lg object-cover" />
           <span className="font-display font-extrabold text-xl tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
             Brahmi
           </span>
         </div>
 
         {/* Desktop Navigation */}
-        <nav className="flex-grow p-4 space-y-1">
+        <nav className="flex-grow p-4 space-y-1" aria-label="Main navigation">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -83,13 +83,14 @@ export default function Layout({ children, activeTab }: LayoutProps) {
               <a
                 key={item.id}
                 href={item.hash}
+                aria-current={isActive ? 'page' : undefined}
                 className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   isActive
                     ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-l-4 border-sky-500 pl-3'
                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50'
                 }`}
               >
-                <Icon className="w-5 h-5" />
+                <Icon className="w-5 h-5" aria-hidden="true" />
                 {item.label}
               </a>
             );
@@ -121,9 +122,10 @@ export default function Layout({ children, activeTab }: LayoutProps) {
               <button
                 onClick={logout}
                 title="Log Out"
+                aria-label="Log out of Brahmi"
                 className="p-1.5 text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
               >
-                <LogOut className="w-4.5 h-4.5" />
+                <LogOut className="w-4.5 h-4.5" aria-hidden="true" />
               </button>
             </div>
           )}
@@ -133,12 +135,13 @@ export default function Layout({ children, activeTab }: LayoutProps) {
       {/* Mobile Shell Container */}
       <div className="flex-grow flex flex-col h-screen overflow-hidden">
         {/* Mobile Header */}
-        <header className={`md:hidden h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 shrink-0 sticky top-0 z-30 ${isOffline ? 'mt-7' : ''}`}>
+        <header className={`md:hidden h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 shrink-0 sticky top-0 z-30 ${isOffline ? 'mt-7' : ''}`} aria-label="Mobile app header">
           <div className="flex items-center gap-2">
-            <img src="/brahmi-logo.png" alt="Brahmi Logo" className="h-7 w-7 rounded-md object-cover" />
-            <h1 className="font-display font-bold text-md text-slate-900 dark:text-white">
+            <img src="/brahmi-logo.png" alt="Brahmi Logo" loading="eager" decoding="async" className="h-7 w-7 rounded-md object-cover" />
+            {/* Using span instead of h1 — the main content area owns the page-level h1 heading */}
+            <span className="font-display font-bold text-md text-slate-900 dark:text-white" aria-live="polite">
               {getTitle()}
-            </h1>
+            </span>
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -146,26 +149,33 @@ export default function Layout({ children, activeTab }: LayoutProps) {
             {user && (
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
+                aria-label={`View profile for ${user.name}`}
+                aria-expanded={isProfileOpen}
                 className="w-7 h-7 rounded-full overflow-hidden border border-slate-200 dark:border-slate-800 cursor-pointer"
               >
                 {user.avatarUrl ? (
                   <img
                     src={user.avatarUrl}
                     alt={user.name}
+                    loading="eager"
+                    decoding="async"
                     className="w-full h-full object-cover"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
-                    <User className="w-4 h-4" />
+                    <User className="w-4 h-4" aria-hidden="true" />
                   </div>
                 )}
               </button>
             )}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-nav-menu"
               className="p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-colors cursor-pointer"
             >
-              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {isMobileMenuOpen ? <X className="w-5 h-5" aria-hidden="true" /> : <Menu className="w-5 h-5" aria-hidden="true" />}
             </button>
           </div>
         </header>
@@ -176,7 +186,9 @@ export default function Layout({ children, activeTab }: LayoutProps) {
             className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
             onClick={() => setIsMobileMenuOpen(false)}
           >
-            <div
+            <nav
+              id="mobile-nav-menu"
+              aria-label="Mobile navigation"
               className={`absolute top-14 left-0 right-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 space-y-3 shadow-xl animate-fade-in`}
               onClick={(e) => e.stopPropagation()}
             >
@@ -190,6 +202,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
                       <a
                         key={item.id}
                         href={item.hash}
+                        aria-current={isActive ? 'page' : undefined}
                         onClick={() => setIsMobileMenuOpen(false)}
                         className={`flex flex-col items-center justify-center p-4 rounded-xl text-xs font-semibold gap-2 border border-slate-100 dark:border-slate-800/60 transition-all ${
                           isActive
@@ -197,7 +210,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
                             : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
                         }`}
                       >
-                        <Icon className="w-5 h-5" />
+                        <Icon className="w-5 h-5" aria-hidden="true" />
                         {item.label}
                       </a>
                     );
@@ -206,13 +219,14 @@ export default function Layout({ children, activeTab }: LayoutProps) {
               <div className="flex justify-end items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/60">
                 <button
                   onClick={logout}
+                  aria-label="Log out of Brahmi"
                   className="flex items-center gap-2 py-2 px-4 rounded-lg text-xs font-semibold bg-red-500/10 text-red-500 cursor-pointer"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
+                  <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
                   Logout
                 </button>
               </div>
-            </div>
+            </nav>
           </div>
         )}
 
@@ -230,15 +244,17 @@ export default function Layout({ children, activeTab }: LayoutProps) {
                 {user.avatarUrl ? (
                   <img
                     src={user.avatarUrl}
-                    alt={user.name}
+                    alt={`${user.name} profile photo`}
+                    loading="lazy"
+                    decoding="async"
                     className="w-12 h-12 rounded-full object-cover mx-auto mb-2 border"
                   />
                 ) : (
                   <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 mx-auto mb-2 border border-slate-200 dark:border-slate-800 shrink-0">
-                    <User className="w-6 h-6" />
+                    <User className="w-6 h-6" aria-hidden="true" />
                   </div>
                 )}
-                <h3 className="text-xs font-bold">{user.name}</h3>
+                <p className="text-xs font-bold">{user.name}</p>
                 <p className="text-[10px] text-slate-400">{user.email}</p>
               </div>
               <div className="pt-2">
@@ -247,9 +263,10 @@ export default function Layout({ children, activeTab }: LayoutProps) {
                     logout();
                     setIsProfileOpen(false);
                   }}
+                  aria-label="Log out of Brahmi"
                   className="w-full flex items-center justify-center gap-2 py-2 text-xs font-semibold text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
                 >
-                  <LogOut className="w-4 h-4" /> Log Out
+                  <LogOut className="w-4 h-4" aria-hidden="true" /> Log Out
                 </button>
               </div>
             </div>
@@ -272,14 +289,14 @@ export default function Layout({ children, activeTab }: LayoutProps) {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-grow p-4 md:p-8 overflow-y-auto bg-slate-50 dark:bg-slate-950 select-none pb-24 md:pb-8">
+        <main className="flex-grow p-4 md:p-8 overflow-y-auto bg-slate-50 dark:bg-slate-950 select-none pb-24 md:pb-8" id="main-content">
           <div className="max-w-7xl mx-auto w-full">
             {children}
           </div>
         </main>
 
         {/* Mobile Bottom Navigation Bar (Full Width) */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-slate-200 shadow-lg h-16 flex items-center justify-around px-2 select-none">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-slate-200 shadow-lg h-16 flex items-center justify-around px-2 select-none" aria-label="Bottom navigation">
           {menuItems
             .filter((item) => item.id !== 'settings')
             .map((item) => {
@@ -289,13 +306,15 @@ export default function Layout({ children, activeTab }: LayoutProps) {
                 <a
                   key={item.id}
                   href={item.hash}
+                  aria-label={item.label}
+                  aria-current={isActive ? 'page' : undefined}
                   className={`flex flex-col items-center justify-center min-w-[64px] h-12 rounded-xl gap-0.5 transition-all duration-300 ${
                     isActive
                       ? 'bg-sky-500/10 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 scale-105 font-bold'
                       : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-355'
                   }`}
                 >
-                  <Icon className={`transition-transform duration-300 ${isActive ? 'w-5 h-5 scale-110' : 'w-5 h-5'}`} />
+                  <Icon className={`transition-transform duration-300 ${isActive ? 'w-5 h-5 scale-110' : 'w-5 h-5'}`} aria-hidden="true" />
                   <span className={`text-[9px] tracking-tight font-extrabold transition-all duration-300 ${isActive ? 'opacity-100' : 'opacity-85'}`}>
                     {item.id === 'history' ? 'History' : item.label.split(' ')[0]}
                   </span>

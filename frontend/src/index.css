@@ -40,8 +40,10 @@
   --bg-secondary: #ffffff;
   --bg-tertiary: #f1f5f9;
   --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
+  /* Darkened from #475569 for WCAG AA contrast (4.5:1 on white) */
+  --text-secondary: #334155;
+  /* Darkened from #94a3b8 for better contrast on light backgrounds */
+  --text-muted: #64748b;
   --border-color: #e2e8f0;
   --accent-purple: #9333ea;
   --accent-orange: #ea580c;
@@ -134,36 +136,42 @@ body {
 
 /* Status Badges & Colors */
 .badge-pending {
-  background-color: rgba(234, 179, 8, 0.15);
-  color: #eab308;
-  border: 1px solid rgba(234, 179, 8, 0.2);
+  background-color: rgba(161, 98, 7, 0.1);
+  /* Dark amber #a16207 passes WCAG AA 4.5:1 on white — was #eab308 which fails */
+  color: #a16207;
+  border: 1px solid rgba(161, 98, 7, 0.2);
 }
 .badge-in_progress {
-  background-color: rgba(59, 130, 246, 0.15);
-  color: #3b82f6;
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  background-color: rgba(37, 99, 235, 0.1);
+  /* Darkened blue for better contrast on white bg */
+  color: #2563eb;
+  border: 1px solid rgba(37, 99, 235, 0.2);
 }
 .badge-completed {
-  background-color: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  background-color: rgba(22, 163, 74, 0.1);
+  /* Darkened green for better contrast on white bg */
+  color: #16a34a;
+  border: 1px solid rgba(22, 163, 74, 0.2);
 }
 
 /* Priority Badges & Colors */
 .badge-high {
-  background-color: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background-color: rgba(220, 38, 38, 0.1);
+  /* Darkened red for WCAG AA on white */
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.2);
 }
 .badge-medium {
-  background-color: rgba(249, 115, 22, 0.15);
-  color: #f97516;
-  border: 1px solid rgba(249, 115, 22, 0.2);
+  background-color: rgba(234, 88, 12, 0.1);
+  /* Darkened orange for WCAG AA on white */
+  color: #ea580c;
+  border: 1px solid rgba(234, 88, 12, 0.2);
 }
 .badge-low {
-  background-color: rgba(100, 116, 139, 0.15);
-  color: #64748b;
-  border: 1px solid rgba(100, 116, 139, 0.2);
+  background-color: rgba(71, 85, 105, 0.1);
+  /* Darkened slate for WCAG AA on white — was #64748b which borderline fails */
+  color: #475569;
+  border: 1px solid rgba(71, 85, 105, 0.2);
 }
 
 /* Safari standalone mode padding adjustments */

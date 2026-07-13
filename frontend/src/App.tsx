@@ -1,17 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { useAppStore } from './lib/store.ts';
 import { api } from './lib/api.ts';
 import Layout from './components/Layout.tsx';
-import Dashboard from './features/dashboard/Dashboard.tsx';
-import WorkList from './features/work/WorkList.tsx';
-import WorkerList from './features/worker/WorkerList.tsx';
-import Settings from './features/settings/Settings.tsx';
-import Login from './features/auth/Login.tsx';
-import Register from './features/auth/Register.tsx';
 import ToastContainer from './components/ui/Toast.tsx';
 import ConfirmDialog from './components/ui/ConfirmDialog.tsx';
-import WorkHistory from './features/work/WorkHistory.tsx';
 import { Loader2 } from 'lucide-react';
+
+// Lazy-load all route-level feature components
+// This eliminates ~851 KiB of unused JS on initial load (Lighthouse: Reduce unused JavaScript)
+const Dashboard = lazy(() => import('./features/dashboard/Dashboard.tsx'));
+const WorkList = lazy(() => import('./features/work/WorkList.tsx'));
+const WorkerList = lazy(() => import('./features/worker/WorkerList.tsx'));
+const Settings = lazy(() => import('./features/settings/Settings.tsx'));
+const Login = lazy(() => import('./features/auth/Login.tsx'));
+const Register = lazy(() => import('./features/auth/Register.tsx'));
+const WorkHistory = lazy(() => import('./features/work/WorkHistory.tsx'));
 
 interface MeResponse {
   user: {
@@ -20,6 +23,22 @@ interface MeResponse {
     name: string;
     avatarUrl: string | null;
   };
+}
+
+// Shared page-level loading spinner for Suspense fallback
+function PageLoader() {
+  return (
+    <div
+      className="flex-grow flex items-center justify-center py-24"
+      aria-busy="true"
+      aria-label="Loading page"
+    >
+      <Loader2
+        className="w-8 h-8 animate-spin"
+        style={{ color: 'var(--accent-purple)' }}
+      />
+    </div>
+  );
 }
 
 export default function App() {
@@ -126,7 +145,9 @@ export default function App() {
     if (isRegisteredView) {
       return (
         <>
-          <Register />
+          <Suspense fallback={<PageLoader />}>
+            <Register />
+          </Suspense>
           <ToastContainer />
           <ConfirmDialog />
         </>
@@ -134,7 +155,9 @@ export default function App() {
     }
     return (
       <>
-        <Login />
+        <Suspense fallback={<PageLoader />}>
+          <Login />
+        </Suspense>
         <ToastContainer />
         <ConfirmDialog />
       </>
@@ -143,37 +166,63 @@ export default function App() {
 
   // 3. Authenticated Views Layout Routing
   let activeTab = 'dashboard';
-  let pageContent = <Dashboard onNavigate={handleNavigate} />;
+  let pageContent = (
+    <Suspense fallback={<PageLoader />}>
+      <Dashboard onNavigate={handleNavigate} />
+    </Suspense>
+  );
 
   switch (currentHash) {
     case '#dashboard':
       activeTab = 'dashboard';
-      pageContent = <Dashboard onNavigate={handleNavigate} />;
+      pageContent = (
+        <Suspense fallback={<PageLoader />}>
+          <Dashboard onNavigate={handleNavigate} />
+        </Suspense>
+      );
       break;
     case '#works':
       activeTab = 'works';
       pageContent = (
-        <WorkList
-          initialSelectedWorkId={selectedWorkId}
-          onClearSelection={handleClearSelection}
-        />
+        <Suspense fallback={<PageLoader />}>
+          <WorkList
+            initialSelectedWorkId={selectedWorkId}
+            onClearSelection={handleClearSelection}
+          />
+        </Suspense>
       );
       break;
     case '#workers':
       activeTab = 'workers';
-      pageContent = <WorkerList />;
+      pageContent = (
+        <Suspense fallback={<PageLoader />}>
+          <WorkerList />
+        </Suspense>
+      );
       break;
     case '#history':
       activeTab = 'history';
-      pageContent = <WorkHistory />;
+      pageContent = (
+        <Suspense fallback={<PageLoader />}>
+          <WorkHistory />
+        </Suspense>
+      );
       break;
     case '#settings':
       activeTab = 'settings';
-      pageContent = <Settings />;
+      pageContent = (
+        <Suspense fallback={<PageLoader />}>
+          <Settings />
+        </Suspense>
+      );
       break;
     default:
       activeTab = 'dashboard';
-      pageContent = <Dashboard onNavigate={handleNavigate} />;
+      pageContent = (
+        <Suspense fallback={<PageLoader />}>
+          <Dashboard onNavigate={handleNavigate} />
+        </Suspense>
+      );
   }
 
   return (

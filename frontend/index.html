@@ -4,8 +4,10 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/masked-icon.svg" />
     <link rel="alternate icon" type="image/png" href="/pwa-192x192.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>Brahmi — Work & Worker Assignment Management</title>
+    <!-- Removed user-scalable=no and maximum-scale=1.0 (Lighthouse accessibility requirement) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Brahmi — Work &amp; Worker Assignment Management</title>
+    <meta name="description" content="Brahmi is a work and worker assignment management PWA for tracking tasks, assigning workers, and monitoring real-time workloads." />
     
     <!-- PWA Installable iOS / Safari Support -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -13,13 +15,29 @@
     <meta name="apple-mobile-web-app-title" content="Brahmi" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     
-    <!-- Theme & Splash Colors -->
+    <!-- Theme &amp; Splash Colors -->
     <meta name="theme-color" content="#0f172a" />
     
-    <!-- Font Preloads (Google Fonts Inter and Outfit) -->
+    <!-- Non-blocking Google Fonts (avoids render-blocking, saves ~300ms FCP) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
   </head>
   <body class="bg-slate-950 text-slate-100 font-sans antialiased overflow-x-hidden">
     <div id="root"></div>

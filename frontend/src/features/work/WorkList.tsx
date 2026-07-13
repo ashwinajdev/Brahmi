@@ -518,9 +518,10 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                   setSelectedWorkId(null);
                   if (onClearSelection) onClearSelection();
                 }}
+                aria-label="Close work details"
                 className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 

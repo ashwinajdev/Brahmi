@@ -126,30 +126,38 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         {/* Total Works */}
         <div
           onClick={() => onNavigate('works')}
+          role="button"
+          tabIndex={0}
+          aria-label={`Total work items: ${totalWorks}. Click to view task board.`}
+          onKeyDown={(e) => e.key === 'Enter' && onNavigate('works')}
           className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md dark:hover:border-slate-700 hover:-translate-y-0.5 transition-all cursor-pointer select-none"
         >
           <div className="space-y-1">
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Work Items</span>
-            <h3 className="text-2xl md:text-3xl font-display font-extrabold text-slate-900 dark:text-white">{totalWorks}</h3>
+            <p className="text-2xl md:text-3xl font-display font-extrabold text-slate-900 dark:text-white">{totalWorks}</p>
             <p className="text-[10px] text-slate-400 font-medium">Click to see task board</p>
           </div>
           <div className="p-3 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-xl">
-            <Briefcase className="w-6 h-6" />
+            <Briefcase className="w-6 h-6" aria-hidden="true" />
           </div>
         </div>
 
         {/* Active Workers */}
         <div
           onClick={() => onNavigate('workers')}
+          role="button"
+          tabIndex={0}
+          aria-label={`Active workers: ${totalActiveWorkers}. Click to view workers roster.`}
+          onKeyDown={(e) => e.key === 'Enter' && onNavigate('workers')}
           className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md dark:hover:border-slate-700 hover:-translate-y-0.5 transition-all cursor-pointer select-none"
         >
           <div className="space-y-1">
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Workers</span>
-            <h3 className="text-2xl md:text-3xl font-display font-extrabold text-slate-900 dark:text-white">{totalActiveWorkers}</h3>
+            <p className="text-2xl md:text-3xl font-display font-extrabold text-slate-900 dark:text-white">{totalActiveWorkers}</p>
             <p className="text-[10px] text-slate-400 font-medium">Click to view workers roster</p>
           </div>
           <div className="p-3 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl">
-            <Users className="w-6 h-6" />
+            <Users className="w-6 h-6" aria-hidden="true" />
           </div>
         </div>
 
@@ -157,11 +165,11 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all select-none">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Overdue Tasks</span>
-            <h3 className={`text-2xl md:text-3xl font-display font-extrabold ${overdueCount > 0 ? 'text-red-500' : 'text-slate-900 dark:text-white'}`}>{overdueCount}</h3>
+            <p className={`text-2xl md:text-3xl font-display font-extrabold ${overdueCount > 0 ? 'text-red-500' : 'text-slate-900 dark:text-white'}`}>{overdueCount}</p>
             <p className="text-[10px] text-slate-400 font-medium">Requires immediate action</p>
           </div>
           <div className={`p-3 rounded-xl ${overdueCount > 0 ? 'bg-red-500/10 text-red-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
-            <Clock className="w-6 h-6" />
+            <Clock className="w-6 h-6" aria-hidden="true" />
           </div>
         </div>
 
@@ -169,11 +177,11 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all select-none">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Unassigned Tasks</span>
-            <h3 className={`text-2xl md:text-3xl font-display font-extrabold ${unassignedCount > 0 ? 'text-orange-500' : 'text-slate-900 dark:text-white'}`}>{unassignedCount}</h3>
+            <p className={`text-2xl md:text-3xl font-display font-extrabold ${unassignedCount > 0 ? 'text-orange-500' : 'text-slate-900 dark:text-white'}`}>{unassignedCount}</p>
             <p className="text-[10px] text-slate-400 font-medium">Tasks needing workers</p>
           </div>
           <div className={`p-3 rounded-xl ${unassignedCount > 0 ? 'bg-orange-500/10 text-orange-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
-            <AlertTriangle className="w-6 h-6" />
+            <AlertTriangle className="w-6 h-6" aria-hidden="true" />
           </div>
         </div>
       </div>
@@ -185,12 +193,12 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           {/* Overdue Tasks List */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800/80">
-              <h3 className="font-display font-bold text-md text-slate-900 dark:text-white flex items-center gap-2">
-                <Clock className="w-5 h-5 text-red-500" /> Overdue Tasks
+              <h2 className="font-display font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                <Clock className="w-5 h-5 text-red-500" aria-hidden="true" /> Overdue Tasks
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-500/10 text-red-500">
                   {overdueCount}
                 </span>
-              </h3>
+              </h2>
               {overdueCount > 0 && (
                 <button
                   onClick={() => onNavigate('works')}
@@ -238,12 +246,12 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           {/* Unassigned Tasks List */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800/80">
-              <h3 className="font-display font-bold text-md text-slate-900 dark:text-white flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-orange-500" /> Needs Assignment
+              <h2 className="font-display font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-orange-500" aria-hidden="true" /> Needs Assignment
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-500">
                   {unassignedCount}
                 </span>
-              </h3>
+              </h2>
               {unassignedCount > 0 && (
                 <button
                   onClick={() => onNavigate('works')}
@@ -292,9 +300,9 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         {/* Right Column: Worker Workload / Staff Allocations (1/3 width) */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col h-fit">
           <div className="pb-4 border-b border-slate-100 dark:border-slate-800/80">
-            <h3 className="font-display font-bold text-md text-slate-900 dark:text-white flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-sky-500" /> Worker Workload
-            </h3>
+            <h2 className="font-display font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-sky-500" aria-hidden="true" /> Worker Workload
+            </h2>
             <p className="text-[10px] text-slate-400 mt-0.5">Active assignments count per staff member</p>
           </div>
 
@@ -334,7 +342,9 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                   >
                     <img
                       src={worker.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(worker.name)}`}
-                      alt={worker.name}
+                      alt={`${worker.name} profile photo`}
+                      loading="lazy"
+                      decoding="async"
                       className="w-10 h-10 rounded-full object-cover shrink-0 border border-slate-200 dark:border-slate-800"
                     />
                     <div className="flex-grow min-w-0 space-y-1">
