@@ -1001,23 +1001,26 @@ function AvatarStack({ workers }: AvatarStackProps) {
     return <span className="text-[10px] italic text-slate-400">Unassigned</span>;
   }
 
+  // Deduplicate workers by id (a worker assigned to multiple shifts appears once)
+  const uniqueWorkers = Array.from(new Map(workers.map((w) => [w.id, w])).values());
+
   const limit = 3;
-  const displayWorkers = workers.slice(0, limit);
-  const overflow = workers.length - limit;
+  const displayWorkers = uniqueWorkers.slice(0, limit);
+  const overflow = uniqueWorkers.length - limit;
 
   return (
     <div className="flex items-center -space-x-1.5 overflow-hidden">
       {displayWorkers.map((worker) => (
         <img
           key={worker.id}
-          className="inline-block h-5.5 w-5.5 rounded-full ring-2 ring-white dark:ring-slate-950 object-cover"
+          className="inline-block h-6 w-6 rounded-full ring-2 ring-white dark:ring-slate-950 object-cover"
           src={worker.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(worker.name)}`}
           alt={worker.name}
           title={`${worker.name} (${worker.role})`}
         />
       ))}
       {overflow > 0 && (
-        <span className="flex items-center justify-center h-5.5 w-5.5 rounded-full ring-2 ring-white dark:ring-slate-950 bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold text-[9px]">
+        <span className="flex items-center justify-center h-6 w-6 rounded-full ring-2 ring-white dark:ring-slate-950 bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold text-[9px]">
           +{overflow}
         </span>
       )}

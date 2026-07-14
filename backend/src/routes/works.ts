@@ -70,7 +70,11 @@ router.get('/', authMiddleware, async (req: AuthenticatedRequest, res: Response)
     // Format works to return structured assigned workers
     const formattedWorks = works.map((work) => ({
       ...work,
-      assignedWorkers: work.assignments.map((a) => a.worker),
+      // Deduplicate by worker id — a worker assigned to multiple shifts
+      // (e.g. Tiffin + Dinner) should only appear once in the list
+      assignedWorkers: Array.from(
+        new Map(work.assignments.map((a) => [a.worker.id, a.worker])).values()
+      ),
     }));
 
     res.json(formattedWorks);
