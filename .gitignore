@@ -90,7 +90,9 @@ out
 
 # Gatsby files
 .cache/
-public
+# Note: 'public' is intentionally scoped to root-level only (Gatsby output)
+# frontend/public/ must NOT be ignored — it contains static assets served by Vite
+/public
 
 # vuepress build outputs
 .vuepress/dist
