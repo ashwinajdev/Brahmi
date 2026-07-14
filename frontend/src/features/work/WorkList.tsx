@@ -283,22 +283,27 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
           <div className="flex md:hidden bg-slate-100 dark:bg-slate-950 p-1 rounded-2xl border border-slate-200/60 dark:border-slate-850 gap-1 mb-2 select-none">
             {(['today', 'tomorrow', 'upcoming'] as const).map((tab) => {
               const count = activeWorksOnly.filter((w) => {
-                if (!w.dueDate) return tab === 'upcoming';
+                if (!w.dueDate) return tab === 'today';
                 const taskDate = new Date(w.dueDate);
-                if (isNaN(taskDate.getTime())) return tab === 'upcoming';
+                if (isNaN(taskDate.getTime())) return tab === 'today';
 
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
 
-                const taskYear = taskDate.getUTCFullYear();
-                const taskMonth = taskDate.getUTCMonth();
-                const taskDay = taskDate.getUTCDate();
-                const taskLocalMidnight = new Date(taskYear, taskMonth, taskDay, 0, 0, 0, 0);
+                // Interpret the stored UTC date as a local calendar date
+                const taskLocalMidnight = new Date(
+                  taskDate.getUTCFullYear(),
+                  taskDate.getUTCMonth(),
+                  taskDate.getUTCDate(),
+                  0, 0, 0, 0
+                );
 
-                const diffTime = taskLocalMidnight.getTime() - today.getTime();
-                const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+                const diffDays = Math.round(
+                  (taskLocalMidnight.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+                );
 
-                if (tab === 'today') return diffDays === 0;
+                // Overdue (diffDays < 0) and due today (diffDays === 0) both belong in Today
+                if (tab === 'today') return diffDays <= 0;
                 if (tab === 'tomorrow') return diffDays === 1;
                 return diffDays >= 2;
               }).length;
@@ -348,28 +353,29 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {(['today', 'tomorrow', 'upcoming'] as const).map((columnGroup) => {
               const columnTasks = activeWorksOnly.filter((w) => {
-                if (!w.dueDate) return columnGroup === 'upcoming';
+                if (!w.dueDate) return columnGroup === 'today';
                 const taskDate = new Date(w.dueDate);
-                if (isNaN(taskDate.getTime())) return columnGroup === 'upcoming';
+                if (isNaN(taskDate.getTime())) return columnGroup === 'today';
 
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
 
-                const taskYear = taskDate.getUTCFullYear();
-                const taskMonth = taskDate.getUTCMonth();
-                const taskDay = taskDate.getUTCDate();
-                const taskLocalMidnight = new Date(taskYear, taskMonth, taskDay, 0, 0, 0, 0);
+                // Interpret the stored UTC date as a local calendar date
+                const taskLocalMidnight = new Date(
+                  taskDate.getUTCFullYear(),
+                  taskDate.getUTCMonth(),
+                  taskDate.getUTCDate(),
+                  0, 0, 0, 0
+                );
 
-                const diffTime = taskLocalMidnight.getTime() - today.getTime();
-                const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+                const diffDays = Math.round(
+                  (taskLocalMidnight.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+                );
 
-                if (columnGroup === 'today') {
-                  return diffDays === 0;
-                } else if (columnGroup === 'tomorrow') {
-                  return diffDays === 1;
-                } else {
-                  return diffDays >= 2;
-                }
+                // Overdue (diffDays < 0) and due today (diffDays === 0) both belong in Today
+                if (columnGroup === 'today') return diffDays <= 0;
+                if (columnGroup === 'tomorrow') return diffDays === 1;
+                return diffDays >= 2;
               });
 
               const sortedTasks = [...columnTasks].sort((a, b) => {
@@ -965,21 +971,46 @@ function WorkCard({ work, onClick }: WorkCardProps) {
   // Prevent click propagation when clicking stack
   const stopProp = (e: React.MouseEvent) => e.stopPropagation();
 
+  // Determine if this task is overdue (dueDate is before today)
+  const isOverdue = (() => {
+    if (!work.dueDate) return false;
+    const taskDate = new Date(work.dueDate);
+    if (isNaN(taskDate.getTime())) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const taskLocalMidnight = new Date(
+      taskDate.getUTCFullYear(),
+      taskDate.getUTCMonth(),
+      taskDate.getUTCDate(),
+      0, 0, 0, 0
+    );
+    return taskLocalMidnight.getTime() < today.getTime();
+  })();
+
   return (
     <div
       onClick={onClick}
-      className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-850 p-3 rounded-2xl shadow-sm hover:shadow-md dark:hover:border-slate-800/80 hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between min-h-[85px]"
+      className={`bg-white dark:bg-slate-900 border p-3 rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between min-h-[85px] ${
+        isOverdue
+          ? 'border-red-200 dark:border-red-900/50 hover:border-red-300 dark:hover:border-red-800'
+          : 'border-slate-150 dark:border-slate-850 dark:hover:border-slate-800/80'
+      }`}
     >
       <div className="flex items-start justify-between gap-3">
         <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors leading-normal line-clamp-2">
           {work.title}
         </h4>
+        {isOverdue && (
+          <span className="shrink-0 text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-950/40 text-red-500 border border-red-200 dark:border-red-900/50">
+            Overdue
+          </span>
+        )}
       </div>
 
       {/* Footer Block: Date, Avatars */}
       <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 font-bold border-t border-slate-50 dark:border-slate-800/40 pt-2">
-        <span className="flex items-center gap-1">
-          <Calendar className="w-3.5 h-3.5 text-sky-400/80" />
+        <span className={`flex items-center gap-1 ${isOverdue ? 'text-red-400 dark:text-red-500' : ''}`}>
+          <Calendar className="w-3.5 h-3.5" />
           {formatDate(work.dueDate)}
         </span>
         

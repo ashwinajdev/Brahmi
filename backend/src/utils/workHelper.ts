@@ -1,29 +1,7 @@
-import prisma from '../db/prisma.js';
-
+// autoUpdatePastWorks is intentionally a no-op.
+// Overdue tasks are displayed in the "Today" column by the frontend
+// based on diffDays <= 0, without ever mutating the original dueDate.
+// Preserving the original date is important for history and audit accuracy.
 export async function autoUpdatePastWorks(): Promise<void> {
-  try {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const date = now.getDate();
-    // Construct today's date at UTC midnight (timezone-agnostic representation used in DB)
-    const todayUTC = new Date(Date.UTC(year, month, date));
-
-    // Update all works that are not completed and have a due date in the past
-    const result = await prisma.work.updateMany({
-      where: {
-        dueDate: { lt: todayUTC },
-        status: { not: 'completed' },
-      },
-      data: {
-        dueDate: todayUTC,
-      },
-    });
-
-    if (result.count > 0) {
-      console.log(`[AutoUpdate] Updated ${result.count} past work task(s) to today's date (${todayUTC.toISOString()}).`);
-    }
-  } catch (error) {
-    console.error('Error auto-updating past works:', error);
-  }
+  // No database mutation — frontend handles overdue grouping.
 }
