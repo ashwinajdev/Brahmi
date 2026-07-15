@@ -17,6 +17,7 @@ import {
   Plus
 } from 'lucide-react';
 import WorkFormModal from './WorkFormModal.tsx';
+import CustomSelect from '../../components/ui/CustomSelect.tsx';
 
 interface Worker {
   id: string;
@@ -433,17 +434,19 @@ export default function WorkHistory() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 select-none">Filter Logs By Date</h3>
                 <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
-                  <select
+                  <CustomSelect
                     value={dateFilterType}
-                    onChange={(e) => setDateFilterType(e.target.value as any)}
-                    className="px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-750 focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer w-full sm:w-44 font-semibold"
-                  >
-                    <option value="all">All Time</option>
-                    <option value="specific">Specific Date</option>
-                    <option value="this-month">This Month</option>
-                    <option value="last-month">Last Month</option>
-                    <option value="custom">Custom Range</option>
-                  </select>
+                    onChange={(v) => setDateFilterType(v as any)}
+                    options={[
+                      { value: 'all', label: 'All Time' },
+                      { value: 'specific', label: 'Specific Date' },
+                      { value: 'this-month', label: 'This Month' },
+                      { value: 'last-month', label: 'Last Month' },
+                      { value: 'custom', label: 'Custom Range' },
+                    ]}
+                    size="sm"
+                    className="w-full sm:w-44"
+                  />
                 </div>
               </div>
 

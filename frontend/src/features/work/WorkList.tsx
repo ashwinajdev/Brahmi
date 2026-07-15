@@ -4,6 +4,7 @@ import { api } from '../../lib/api.ts';
 import { useAppStore } from '../../lib/store.ts';
 import { formatDate } from '../../lib/utils.ts';
 import WorkFormModal from './WorkFormModal.tsx';
+import CustomSelect from '../../components/ui/CustomSelect.tsx';
 import {
   Briefcase,
   Search,
@@ -811,18 +812,15 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                     {roster.find((w) => w.id === selectedWorkerIdForAssign)?.name || 'Unknown Staff'}
                   </div>
                 ) : (
-                  <select
+                  <CustomSelect
                     value={selectedWorkerIdForAssign}
-                    onChange={(e) => setSelectedWorkerIdForAssign(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-850 bg-slate-50 dark:bg-slate-950 text-slate-850 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm cursor-pointer"
-                  >
-                    <option value="">-- Choose Worker --</option>
-                    {roster.map((worker) => (
-                      <option key={worker.id} value={worker.id}>
-                        {worker.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setSelectedWorkerIdForAssign}
+                    options={[
+                      { value: '', label: '-- Choose Worker --' },
+                      ...roster.map((worker) => ({ value: worker.id, label: worker.name })),
+                    ]}
+                    placeholder="-- Choose Worker --"
+                  />
                 )}
               </div>
 

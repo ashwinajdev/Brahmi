@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import CustomSelect from '../../components/ui/CustomSelect.tsx';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api.ts';
 import { useAppStore } from '../../lib/store.ts';
@@ -600,16 +601,18 @@ export default function WorkerList() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 select-none">Filter Logs By Date</h3>
                 <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
-                  <select
+                  <CustomSelect
                     value={dateFilterType}
-                    onChange={(e) => setDateFilterType(e.target.value)}
-                    className="px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer flex-grow sm:flex-grow-0"
-                  >
-                    <option value="all">All Time</option>
-                    <option value="this-month">This Month</option>
-                    <option value="last-month">Last Month</option>
-                    <option value="custom">Custom Date Range</option>
-                  </select>
+                    onChange={setDateFilterType}
+                    options={[
+                      { value: 'all', label: 'All Time' },
+                      { value: 'this-month', label: 'This Month' },
+                      { value: 'last-month', label: 'Last Month' },
+                      { value: 'custom', label: 'Custom Date Range' },
+                    ]}
+                    size="sm"
+                    className="flex-grow sm:flex-grow-0 sm:w-auto"
+                  />
                 </div>
               </div>
 
@@ -873,15 +876,17 @@ export default function WorkerList() {
           </div>
 
           {/* Status Filter */}
-          <select
+          <CustomSelect
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500"
-          >
-            <option value="all">All Statuses</option>
-            <option value="active">Active Only</option>
-            <option value="inactive">Inactive Only</option>
-          </select>
+            onChange={setStatusFilter}
+            options={[
+              { value: 'all', label: 'All Statuses' },
+              { value: 'active', label: 'Active Only' },
+              { value: 'inactive', label: 'Inactive Only' },
+            ]}
+            size="sm"
+            className="w-auto"
+          />
         </div>
 
         {/* Add Action */}

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api.ts';
 import { useAppStore } from '../../lib/store.ts';
 import { X, Loader2 } from 'lucide-react';
+import CustomSelect from '../../components/ui/CustomSelect.tsx';
 
 export interface Worker {
   id: string;
@@ -168,33 +169,27 @@ export default function WorkFormModal({
             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
               Work Place *
             </label>
-            <select
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm"
-            >
-              <option value="" disabled>Select a Work Place...</option>
-              {(() => {
-                const standardPlaces: string[] = [];
-                const dbPlaces = allWorks.map((w) => w.title);
-                const allPlaces = Array.from(new Set([...standardPlaces, ...dbPlaces]));
-                if (title && title !== 'custom' && !allPlaces.includes(title)) {
-                  allPlaces.push(title);
-                }
-                allPlaces.sort((a, b) => a.localeCompare(b));
-                return (
-                  <>
-                    {allPlaces.map((p) => (
-                      <option key={p} value={p}>
-                        {p}
-                      </option>
-                    ))}
-                    <option value="custom">+ Add Custom Work Place...</option>
-                  </>
-                );
-              })()}
-            </select>
+            {(() => {
+              const standardPlaces: string[] = [];
+              const dbPlaces = allWorks.map((w) => w.title);
+              const allPlaces = Array.from(new Set([...standardPlaces, ...dbPlaces]));
+              if (title && title !== 'custom' && !allPlaces.includes(title)) {
+                allPlaces.push(title);
+              }
+              allPlaces.sort((a, b) => a.localeCompare(b));
+              const selectOptions = [
+                ...allPlaces.map((p) => ({ value: p, label: p })),
+                { value: 'custom', label: '+ Add Custom Work Place...' },
+              ];
+              return (
+                <CustomSelect
+                  value={title}
+                  onChange={setTitle}
+                  options={selectOptions}
+                  placeholder="Select a Work Place..."
+                />
+              );
+            })()}
           </div>
 
           {/* Custom Title Input */}
