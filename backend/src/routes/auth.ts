@@ -109,7 +109,12 @@ router.post('/login', async (req, res): Promise<void> => {
       res.status(400).json({ error: error.errors });
       return;
     }
-    console.error(error);
+    console.error('[LOGIN ERROR]', {
+      message: (error as any)?.message,
+      code: (error as any)?.code,
+      meta: (error as any)?.meta,
+      stack: (error as any)?.stack?.split('\n').slice(0, 5).join('\n'),
+    });
     res.status(500).json({ error: 'Server error during login' });
   }
 });

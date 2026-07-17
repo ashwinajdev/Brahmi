@@ -1,11 +1,11 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
-}
-
-generator client {
-  provider = "prisma-client-js"
 }
 
 model User {
@@ -24,7 +24,7 @@ model Worker {
   phone          String
   alternatePhone String?
   email          String
-  role           String           // role/skill tag
+  role           String
   avatarUrl      String?
   isActive       Boolean          @default(true)
   createdAt      DateTime         @default(now())
@@ -37,8 +37,8 @@ model Work {
   title       String
   description String
   category    String
-  priority    String           // low, medium, high
-  status      String           // pending, in_progress, completed
+  priority    String
+  status      String
   dueDate     DateTime
   location    String?
   createdAt   DateTime         @default(now())
@@ -51,7 +51,7 @@ model WorkAssignment {
   workId       String
   workerId     String
   assignedAt   DateTime  @default(now())
-  unassignedAt DateTime? // nullable for tracking history
+  unassignedAt DateTime?
   amount       Float?
   shift        String?
   work         Work      @relation(fields: [workId], references: [id], onDelete: Cascade)
