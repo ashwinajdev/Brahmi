@@ -664,7 +664,7 @@ export default function WorkerList() {
                 </div>
               )}
             </div>
-            <div className="glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-950">
+            <div className={`glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 ${isTableEditing ? 'overflow-visible' : 'overflow-hidden'}`}>
               <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10 flex items-center justify-between">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Work History</h3>
                 {filteredAssignments.length > 0 && (
@@ -695,7 +695,7 @@ export default function WorkerList() {
                   </div>
                 )}
               </div>
-              <div className="overflow-x-auto">
+              <div className={isTableEditing ? 'overflow-visible' : 'overflow-x-auto'}>
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50/50 dark:bg-slate-900/5 select-none">
@@ -801,18 +801,15 @@ export default function WorkerList() {
                                 </td>
 
                                 {/* Work Column */}
-                                <td className="py-2 px-2 text-xs font-extrabold text-slate-900 dark:text-white min-w-[100px] break-words">
+                                <td className="py-2 px-2 text-xs font-extrabold text-slate-900 dark:text-white min-w-[150px] break-words">
                                   {isTableEditing && edits ? (
-                                    <select
+                                    <CustomSelect
                                       value={edits.workTitle}
-                                      onChange={(e) => updateRowField(assignment.id, 'workTitle', e.target.value)}
-                                      className="w-full px-2 py-1 text-xs font-semibold text-slate-900 dark:text-white rounded border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer"
-                                    >
-                                      <option value="" disabled>Select Work</option>
-                                      {uniqueWorkTitles.map((title) => (
-                                        <option key={title} value={title}>{title}</option>
-                                      ))}
-                                    </select>
+                                      onChange={(val) => updateRowField(assignment.id, 'workTitle', val)}
+                                      options={uniqueWorkTitles.map((title) => ({ value: title, label: title }))}
+                                      placeholder="Select Work"
+                                      size="sm"
+                                    />
                                   ) : (
                                     assignment.workTitle
                                   )}
