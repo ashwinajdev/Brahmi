@@ -44,7 +44,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, hash: '#dashboard' },
     { id: 'works', label: 'Work Tasks', icon: Briefcase, hash: '#works' },
-    { id: 'workers', label: 'Worker Roster', icon: Users, hash: '#workers' },
+    { id: 'workers', label: 'Worker', icon: Users, hash: '#workers' },
     { id: 'history', label: 'Work History', icon: History, hash: '#history' },
     { id: 'settings', label: 'Settings', icon: Settings, hash: '#settings' },
   ];

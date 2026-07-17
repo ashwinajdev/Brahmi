@@ -7,7 +7,6 @@ import {
   AlertCircle,
   AlertTriangle,
   ChevronRight,
-  TrendingUp,
   UserCheck
 } from 'lucide-react';
 
@@ -29,12 +28,14 @@ interface WorkerWorkload {
 
 interface DashboardStats {
   totalWorks: number;
+  todaysWorksCount: number;
   statusCounts: {
     pending: number;
     in_progress: number;
     completed: number;
   };
   totalActiveWorkers: number;
+  assignedWorkersCount: number;
   unassignedCount: number;
   unassignedWorks: TaskSummary[];
   workload: WorkerWorkload[];
@@ -87,58 +88,33 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
   const {
     totalWorks,
+    todaysWorksCount,
     statusCounts,
     totalActiveWorkers,
+    assignedWorkersCount,
     unassignedCount,
     unassignedWorks,
     workload
   } = stats!;
 
-  // Calculate percentage of progress
-  const completionPercentage = totalWorks > 0 ? Math.round((statusCounts.completed / totalWorks) * 100) : 0;
 
   return (
     <div className="space-y-3">
-      {/* Header Banner */}
-      <div className="glass-panel p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-sky-600/5 rounded-full blur-3xl pointer-events-none" />
-        <div>
-          <h2 className="text-lg md:text-xl font-display font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-            Workspace Overview <TrendingUp className="w-5 h-5 text-sky-500" />
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Real-time synchronization of active worker loads and pending tasks.
-          </p>
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
-          {/* Live sync indicator */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-800/80">
-            <span className={`w-2 h-2 rounded-full ${isFetching ? 'bg-sky-500 animate-pulse' : 'bg-green-500'}`} />
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider hidden sm:block">
-              {isFetching ? 'Syncing…' : 'Live'}
-            </span>
-          </div>
-          <div className="px-4 py-2 bg-slate-100 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-800/80 text-center">
-            <span className="block text-xs text-slate-400 font-semibold uppercase tracking-wider">Completion</span>
-            <span className="font-display font-extrabold text-lg text-green-500 dark:text-green-400">{completionPercentage}%</span>
-          </div>
-        </div>
-      </div>
 
       {/* Main Stats Row */}
-      <div className="grid grid-cols-3 gap-2.5">
-        {/* Total Works */}
+      <div className="grid grid-cols-2 gap-2.5">
+        {/* Today's Work */}
         <div
           onClick={() => onNavigate('works')}
           role="button"
           tabIndex={0}
-          aria-label={`Total work items: ${totalWorks}. Click to view task board.`}
+          aria-label={`Today's work items: ${todaysWorksCount}. Click to view task board.`}
           onKeyDown={(e) => e.key === 'Enter' && onNavigate('works')}
           className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl flex items-center justify-between shadow-sm hover:shadow-md dark:hover:border-slate-700 hover:-translate-y-0.5 transition-all cursor-pointer select-none"
         >
           <div className="space-y-0.5">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Total Work Items</span>
-            <p className="text-2xl font-display font-extrabold text-slate-900 dark:text-white">{totalWorks}</p>
+            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Today's Work</span>
+            <p className="text-2xl font-display font-extrabold text-slate-900 dark:text-white">{todaysWorksCount}</p>
             <p className="text-[10px] text-slate-400 font-medium">Click to see task board</p>
           </div>
           <div className="p-2.5 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-lg">
@@ -146,19 +122,19 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           </div>
         </div>
 
-        {/* Active Workers */}
+        {/* Assigned Workers */}
         <div
           onClick={() => onNavigate('workers')}
           role="button"
           tabIndex={0}
-          aria-label={`Active workers: ${totalActiveWorkers}. Click to view workers roster.`}
+          aria-label={`Assigned workers: ${assignedWorkersCount}. Click to view workers.`}
           onKeyDown={(e) => e.key === 'Enter' && onNavigate('workers')}
           className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl flex items-center justify-between shadow-sm hover:shadow-md dark:hover:border-slate-700 hover:-translate-y-0.5 transition-all cursor-pointer select-none"
         >
           <div className="space-y-0.5">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Active Workers</span>
-            <p className="text-2xl font-display font-extrabold text-slate-900 dark:text-white">{totalActiveWorkers}</p>
-            <p className="text-[10px] text-slate-400 font-medium">Click to view workers roster</p>
+            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Assigned Workers</span>
+            <p className="text-2xl font-display font-extrabold text-slate-900 dark:text-white">{assignedWorkersCount}</p>
+            <p className="text-[10px] text-slate-400 font-medium">Click to view workers</p>
           </div>
           <div className="p-2.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg">
             <Users className="w-5 h-5" aria-hidden="true" />

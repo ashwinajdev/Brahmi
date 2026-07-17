@@ -94,6 +94,30 @@ export default function WorkerList() {
     enabled: !!historyWorkerId,
   });
 
+  // Query: Get all works for select list
+  const { data: works = [] } = useQuery<any[]>({
+    queryKey: ['works-list-for-select'],
+    queryFn: () => api.get<any[]>('/works'),
+  });
+
+  const uniqueWorkTitles = useMemo(() => {
+    const titles = new Set<string>();
+    works.forEach((w: any) => {
+      if (w.title) titles.add(w.title);
+    });
+    // Add existing edited work titles to the options just in case
+    Object.values(editedAssignments).forEach((edit: any) => {
+      if (edit.workTitle) titles.add(edit.workTitle);
+    });
+    // Add initial work titles from historyData as well
+    if (historyData && historyData.assignments) {
+      historyData.assignments.forEach((a: any) => {
+        if (a.workTitle) titles.add(a.workTitle);
+      });
+    }
+    return Array.from(titles).sort((a, b) => a.localeCompare(b));
+  }, [works, editedAssignments, historyData]);
+
   const filteredAssignments = useMemo(() => {
     if (!historyData || !historyData.assignments) return [];
     const now = new Date();
@@ -779,12 +803,16 @@ export default function WorkerList() {
                                 {/* Work Column */}
                                 <td className="py-2 px-2 text-xs font-extrabold text-slate-900 dark:text-white min-w-[100px] break-words">
                                   {isTableEditing && edits ? (
-                                    <input
-                                      type="text"
+                                    <select
                                       value={edits.workTitle}
                                       onChange={(e) => updateRowField(assignment.id, 'workTitle', e.target.value)}
-                                      className="w-full px-2 py-1 text-xs font-semibold text-slate-900 dark:text-white rounded border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                                    />
+                                      className="w-full px-2 py-1 text-xs font-semibold text-slate-900 dark:text-white rounded border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer"
+                                    >
+                                      <option value="" disabled>Select Work</option>
+                                      {uniqueWorkTitles.map((title) => (
+                                        <option key={title} value={title}>{title}</option>
+                                      ))}
+                                    </select>
                                   ) : (
                                     assignment.workTitle
                                   )}
@@ -856,9 +884,9 @@ export default function WorkerList() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Search and Action Bar */}
-      <div className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="glass-panel p-3 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3 flex-grow max-w-3xl">
           {/* Search Box */}
@@ -908,7 +936,7 @@ export default function WorkerList() {
       ) : isError ? (
         <div className="flex flex-col items-center justify-center py-12 text-center p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
           <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">Failed to load Worker Roster</h3>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">Failed to load Workers</h3>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             {error instanceof Error ? error.message : 'Please check your connection and try again.'}
           </p>
@@ -929,7 +957,7 @@ export default function WorkerList() {
             <div
               key={worker.id}
               onClick={() => setHistoryWorkerId(worker.id)}
-              className={`cursor-pointer bg-white dark:bg-slate-900 border rounded-2xl shadow-sm hover:shadow-md hover:border-sky-500/25 dark:hover:border-sky-500/15 p-5 relative overflow-hidden transition-all flex flex-col justify-between ${
+              className={`cursor-pointer bg-white dark:bg-slate-900 border rounded-xl shadow-sm hover:shadow-md hover:border-sky-500/25 dark:hover:border-sky-500/15 p-3.5 relative overflow-hidden transition-all flex flex-col justify-between ${
                 worker.isActive
                   ? 'border-slate-200 dark:border-slate-800'
                   : 'border-slate-200 dark:border-slate-800 opacity-60 bg-slate-50/50 dark:bg-slate-900/40'
@@ -938,13 +966,13 @@ export default function WorkerList() {
               <div>
                 {/* Header: Photo, Name, Contact Numbers, and Quick Actions */}
                 <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-4 min-w-0 flex-grow">
+                  <div className="flex items-start gap-3 min-w-0 flex-grow">
                     <img
                       src={worker.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(worker.name)}`}
                       alt={`${worker.name} profile photo`}
                       loading="lazy"
                       decoding="async"
-                      className="w-14 h-14 rounded-2xl object-cover shrink-0 border border-slate-100 dark:border-slate-800"
+                      className="w-10 h-10 rounded-xl object-cover shrink-0 border border-slate-100 dark:border-slate-800"
                     />
                     <div className="min-w-0 space-y-1 flex-grow">
                       <h3 className="text-base font-extrabold text-slate-900 dark:text-white truncate">{worker.name}</h3>
@@ -981,7 +1009,7 @@ export default function WorkerList() {
               </div>
 
               {/* Bottom Actions Row */}
-              <div className="mt-4 border-t border-slate-100 dark:border-slate-800/80 pt-3 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+              <div className="mt-2.5 border-t border-slate-100 dark:border-slate-800/80 pt-2 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
                 {/* Active Toggle Switch */}
                 <button
                   onClick={() => handleToggleActive(worker)}

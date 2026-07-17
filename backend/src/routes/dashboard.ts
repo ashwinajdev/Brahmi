@@ -34,6 +34,21 @@ router.get('/stats', authMiddleware, async (req: AuthenticatedRequest, res: Resp
 
     const totalWorks = statusCounts.pending + statusCounts.in_progress + statusCounts.completed;
 
+    // Today's works count
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+
+    const todaysWorksCount = await prisma.work.count({
+      where: {
+        dueDate: {
+          gte: startOfToday,
+          lte: endOfToday,
+        },
+      },
+    });
+
     // 2. Total active workers count
     const totalActiveWorkers = await prisma.worker.count({
       where: { isActive: true },
@@ -64,16 +79,29 @@ router.get('/stats', authMiddleware, async (req: AuthenticatedRequest, res: Resp
 
     const workloadData = activeWorkersWithWorkload.map((w) => ({
       id: w.id,
+      name: w.role, // role/skill tag helper placeholder
+      role: w.role,
+      avatarUrl: w.avatarUrl,
+      activeAssignmentsCount: w.assignments.length,
+    }));
+
+    // Actually map user fields correctly
+    const correctWorkloadData = activeWorkersWithWorkload.map((w) => ({
+      id: w.id,
       name: w.name,
       role: w.role,
       avatarUrl: w.avatarUrl,
       activeAssignmentsCount: w.assignments.length,
     })).sort((a, b) => b.activeAssignmentsCount - a.activeAssignmentsCount);
 
+    const assignedWorkersCount = correctWorkloadData.filter(w => w.activeAssignmentsCount > 0).length;
+
     res.json({
       totalWorks,
+      todaysWorksCount,
       statusCounts,
       totalActiveWorkers,
+      assignedWorkersCount,
       unassignedCount: unassignedWorks.length,
       unassignedWorks: unassignedWorks.map((w) => ({
         id: w.id,
@@ -82,7 +110,7 @@ router.get('/stats', authMiddleware, async (req: AuthenticatedRequest, res: Resp
         priority: w.priority,
         status: w.status,
       })),
-      workload: workloadData,
+      workload: correctWorkloadData,
     });
   } catch (error) {
     console.error(error);
