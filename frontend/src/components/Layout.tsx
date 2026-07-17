@@ -11,7 +11,8 @@ import {
   Menu,
   X,
   History,
-  User
+  User,
+  RotateCw
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -145,6 +146,21 @@ export default function Layout({ children, activeTab }: LayoutProps) {
           </div>
 
           <div className="flex items-center gap-1.5">
+            {/* Refresh Button */}
+            <button
+              onClick={() => {
+                const btn = document.getElementById('mobile-refresh-btn');
+                if (btn) btn.classList.add('animate-spin');
+                setTimeout(() => {
+                  window.location.reload();
+                }, 300);
+              }}
+              title="Refresh Page"
+              aria-label="Refresh page data"
+              className="p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-colors cursor-pointer flex items-center justify-center animate-none"
+            >
+              <RotateCw id="mobile-refresh-btn" className="w-4 h-4" />
+            </button>
 
             {user && (
               <button
@@ -280,6 +296,21 @@ export default function Layout({ children, activeTab }: LayoutProps) {
           </h1>
 
           <div className="flex items-center gap-4">
+            {/* Refresh Button */}
+            <button
+              onClick={() => {
+                const btn = document.getElementById('desktop-refresh-btn');
+                if (btn) btn.classList.add('animate-spin');
+                setTimeout(() => {
+                  window.location.reload();
+                }, 300);
+              }}
+              title="Refresh Page"
+              aria-label="Refresh page data"
+              className="p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-colors cursor-pointer flex items-center justify-center border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm"
+            >
+              <RotateCw id="desktop-refresh-btn" className="w-4 h-4" />
+            </button>
 
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700/50">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5 animate-pulse"></span>

@@ -14,7 +14,8 @@ import {
   Check,
   X,
   Edit2,
-  Plus
+  Plus,
+  ChevronDown
 } from 'lucide-react';
 import WorkFormModal from './WorkFormModal.tsx';
 import CustomSelect from '../../components/ui/CustomSelect.tsx';
@@ -56,7 +57,17 @@ export default function WorkHistory() {
 
   // Bulk Edit State
   const [isDetailEditing, setIsDetailEditing] = useState(false);
-  const [editedDetails, setEditedDetails] = useState<Record<string, { amount: string; shift: string }>>({});
+  const [editedDetails, setEditedDetails] = useState<Record<string, { amount: string; shift: string; workerId: string }>>({});
+
+  // Collapse state for date groupings in detail view
+  const [collapsedDates, setCollapsedDates] = useState<Record<string, boolean>>({});
+
+  const toggleDateCollapse = (dateKey: string) => {
+    setCollapsedDates((prev) => ({
+      ...prev,
+      [dateKey]: !prev[dateKey],
+    }));
+  };
 
   // Fetch completed works
   const { data: completedWorks = [], isLoading, isError, error } = useQuery<Work[]>({
@@ -66,6 +77,12 @@ export default function WorkHistory() {
       if (searchTerm) params.append('search', searchTerm);
       return api.get<Work[]>(`/works?${params.toString()}`);
     },
+  });
+
+  // Fetch all workers for custom select options in edit mode
+  const { data: roster = [] } = useQuery<any[]>({
+    queryKey: ['workers-list-for-select'],
+    queryFn: () => api.get<any[]>('/workers'),
   });
 
   // Group completed works by title
@@ -265,6 +282,7 @@ export default function WorkHistory() {
       initialEdits[item.id] = {
         amount: item.amount.toString(),
         shift: item.shifts.length === 1 ? item.shifts[0] : item.shifts.join(' & '),
+        workerId: item.workerId,
       };
     });
     setEditedDetails(initialEdits);
@@ -294,40 +312,58 @@ export default function WorkHistory() {
 
       const editedShifts = edits.shift ? edits.shift.split(' & ') : [];
       const editedTotalAmount = parseFloat(edits.amount) || 0;
+      const editedWorkerId = edits.workerId || item.workerId;
 
       const originalShiftsSorted = [...originalShifts].sort().join(' & ');
       const editedShiftsSorted = [...editedShifts].sort().join(' & ');
 
-      if (editedTotalAmount !== originalAmount || editedShiftsSorted !== originalShiftsSorted) {
+      if (editedTotalAmount !== originalAmount || editedShiftsSorted !== originalShiftsSorted || editedWorkerId !== item.workerId) {
         const amtPerShift = editedTotalAmount / (editedShifts.length || 1);
         const workId = originalAssignments[0]?.workId;
-        const workerId = item.workerId;
 
-        // Process additions and updates
-        for (const shift of editedShifts) {
-          const match = originalAssignments.find((a: any) => a.shift === shift);
-          if (match) {
-            ops.push({
-              type: 'update',
-              id: match.id,
-              payload: { amount: amtPerShift, shift },
-            });
-          } else {
-            ops.push({
-              type: 'create',
-              payload: { workId, workerId, shift, amount: amtPerShift },
-            });
-          }
-        }
-
-        // Process removals
-        for (const orig of originalAssignments) {
-          if (!editedShifts.includes(orig.shift)) {
+        if (editedWorkerId !== item.workerId) {
+          // Delete all original assignments for this worker
+          for (const orig of originalAssignments) {
             ops.push({
               type: 'delete',
               id: orig.id,
               payload: { unassignedAt: new Date().toISOString() },
             });
+          }
+          // Create new assignments for the new worker
+          for (const shift of editedShifts) {
+            ops.push({
+              type: 'create',
+              payload: { workId, workerId: editedWorkerId, shift, amount: amtPerShift },
+            });
+          }
+        } else {
+          // Process additions and updates for same worker
+          for (const shift of editedShifts) {
+            const match = originalAssignments.find((a: any) => a.shift === shift);
+            if (match) {
+              ops.push({
+                type: 'update',
+                id: match.id,
+                payload: { amount: amtPerShift, shift },
+              });
+            } else {
+              ops.push({
+                type: 'create',
+                payload: { workId, workerId: editedWorkerId, shift, amount: amtPerShift },
+              });
+            }
+          }
+
+          // Process removals
+          for (const orig of originalAssignments) {
+            if (!editedShifts.includes(orig.shift)) {
+              ops.push({
+                type: 'delete',
+                id: orig.id,
+                payload: { unassignedAt: new Date().toISOString() },
+              });
+            }
           }
         }
       }
@@ -526,90 +562,127 @@ export default function WorkHistory() {
                   </div>
                 ) : (
                   <>
-                    {groupedByDate.map((group) => (
-                      <div key={group.dateKey} className="space-y-2 border border-slate-150 rounded-2xl p-4 bg-slate-50/20">
-                        {/* Date Section Header */}
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
-                          <span className="text-xs font-extrabold text-sky-600 bg-sky-50 px-2.5 py-1 rounded-lg">
-                            Date: {formatDate(group.dateRaw)}
-                          </span>
-                        </div>
+                    {groupedByDate.map((group) => {
+                      const isCollapsed = collapsedDates[group.dateKey];
+                      return (
+                        <div key={group.dateKey} className={`space-y-2 border border-slate-150 rounded-2xl p-4 bg-slate-50/20 ${isDetailEditing ? 'overflow-visible' : 'overflow-hidden'}`}>
+                          {/* Date Section Header */}
+                          <div
+                            onClick={() => toggleDateCollapse(group.dateKey)}
+                            className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2 cursor-pointer select-none group"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-extrabold text-sky-600 bg-sky-50 px-2.5 py-1 rounded-lg">
+                                Date: {formatDate(group.dateRaw)}
+                              </span>
+                              <button
+                                type="button"
+                                className="text-slate-400 group-hover:text-sky-600 transition-colors cursor-pointer"
+                                aria-label={isCollapsed ? "Expand logs for this date" : "Collapse logs for this date"}
+                              >
+                                <ChevronDown
+                                  className={`w-4 h-4 transition-transform duration-200 ${
+                                    isCollapsed ? '-rotate-90' : ''
+                                  }`}
+                                />
+                              </button>
+                            </div>
+                          </div>
 
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-left border-collapse">
-                            <thead>
-                              <tr className="border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">
-                                <th className="py-2.5 px-2 w-10 text-center">SI No.</th>
-                                <th className="py-2.5 px-2 w-20">Shift</th>
-                                <th className="py-2.5 px-2 min-w-[120px]">Worker Name</th>
-                                <th className="py-2.5 px-2 w-24 text-right">Amount</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
-                              {group.items.map((item: any, index: number) => {
-                                const edits = editedDetails[item.id];
-                                return (
-                                  <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                                    <td className="py-3 px-2 text-center text-slate-400 text-[11px] font-bold">{index + 1}</td>
-                                    
-                                    {/* Shift Column */}
-                                    <td className="py-3 px-2">
-                                      {isDetailEditing && edits ? (
-                                        <div className="flex gap-1 flex-wrap">
-                                          {['Tiffin', 'Lunch', 'Dinner'].map((s) => {
-                                            const currentShifts = edits.shift ? edits.shift.split(' & ') : [];
-                                            const isSelected = currentShifts.includes(s);
-                                            return (
-                                              <button
-                                                key={s}
-                                                type="button"
-                                                onClick={() => {
-                                                  let nextShifts;
-                                                  if (isSelected) {
-                                                    nextShifts = currentShifts.filter((item) => item !== s);
-                                                  } else {
-                                                    nextShifts = [...currentShifts, s];
-                                                  }
-                                                  if (nextShifts.length > 0) {
-                                                    updateRowDetailField(item.id, 'shift', nextShifts.join(' & '));
-                                                    
-                                                    // Auto adjust pay: add 500 when adding shift, subtract 500 when removing shift
-                                                    const currentAmt = parseFloat(edits?.amount || '0') || 0;
-                                                    const newAmt = isSelected 
-                                                      ? Math.max(0, currentAmt - 500) 
-                                                      : currentAmt + 500;
-                                                    updateRowDetailField(item.id, 'amount', newAmt.toString());
-                                                  }
-                                                }}
-                                                className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition-all cursor-pointer select-none ${
-                                                  isSelected
-                                                    ? 'bg-sky-600 text-white border-sky-600'
-                                                    : 'bg-white text-slate-500 border-slate-200'
-                                                }`}
-                                              >
-                                                {s}
-                                              </button>
-                                            );
-                                          })}
-                                        </div>
-                                      ) : (
-                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-sky-50 border border-sky-100 text-sky-600 whitespace-nowrap">
-                                          {item.shifts.join(' & ')}
-                                        </span>
-                                      )}
-                                    </td>
+                          {!isCollapsed && (
+                            <>
+                              <div className={isDetailEditing ? 'overflow-visible' : 'overflow-x-auto'}>
+                                <table className="w-full text-left border-collapse">
+                                  <thead>
+                                    <tr className="border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">
+                                      <th className="py-2.5 px-2 w-10 text-center">SI No.</th>
+                                      <th className="py-2.5 px-2 w-20">Shift</th>
+                                      <th className={`py-2.5 px-2 ${isDetailEditing ? 'min-w-[150px]' : 'min-w-[120px]'}`}>Worker Name</th>
+                                      <th className="py-2.5 px-2 w-24 text-right">Amount</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
+                                    {group.items.map((item: any, index: number) => {
+                                      const edits = editedDetails[item.id];
+                                      return (
+                                        <tr
+                                          key={item.id}
+                                          className={`transition-colors ${
+                                            isDetailEditing
+                                              ? 'bg-slate-50/60 dark:bg-slate-900/30 hover:bg-slate-100/50 dark:hover:bg-slate-800/30'
+                                              : 'hover:bg-slate-50/50 dark:hover:bg-slate-800/10'
+                                          }`}
+                                        >
+                                          <td className="py-3 px-2 text-center text-slate-400 text-[11px] font-bold">{index + 1}</td>
+                                          
+                                          {/* Shift Column */}
+                                          <td className="py-3 px-2">
+                                            {isDetailEditing && edits ? (
+                                              <div className="flex gap-1 flex-wrap">
+                                                {['Tiffin', 'Lunch', 'Dinner'].map((s) => {
+                                                  const currentShifts = edits.shift ? edits.shift.split(' & ') : [];
+                                                  const isSelected = currentShifts.includes(s);
+                                                  return (
+                                                    <button
+                                                      key={s}
+                                                      type="button"
+                                                      onClick={() => {
+                                                        let nextShifts;
+                                                        if (isSelected) {
+                                                          nextShifts = currentShifts.filter((item) => item !== s);
+                                                        } else {
+                                                          nextShifts = [...currentShifts, s];
+                                                        }
+                                                        if (nextShifts.length > 0) {
+                                                          updateRowDetailField(item.id, 'shift', nextShifts.join(' & '));
+                                                          
+                                                          // Auto adjust pay: add 500 when adding shift, subtract 500 when removing shift
+                                                          const currentAmt = parseFloat(edits?.amount || '0') || 0;
+                                                          const newAmt = isSelected 
+                                                            ? Math.max(0, currentAmt - 500) 
+                                                            : currentAmt + 500;
+                                                          updateRowDetailField(item.id, 'amount', newAmt.toString());
+                                                        }
+                                                      }}
+                                                      className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition-all cursor-pointer select-none ${
+                                                        isSelected
+                                                          ? 'bg-sky-600 text-white border-sky-600'
+                                                          : 'bg-white text-slate-500 border-slate-200'
+                                                      }`}
+                                                    >
+                                                      {s}
+                                                    </button>
+                                                  );
+                                                })}
+                                              </div>
+                                            ) : (
+                                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-sky-50 border border-sky-100 text-sky-600 whitespace-nowrap">
+                                                {item.shifts.join(' & ')}
+                                              </span>
+                                            )}
+                                          </td>
 
-                                    {/* Worker Name Column */}
-                                    <td className="py-3 px-2">
-                                      <div className="flex items-center gap-2">
-                                        <img
-                                          src={item.workerAvatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(item.workerName)}`}
-                                          alt={item.workerName}
-                                          className="w-5 h-5 rounded-full object-cover border"
-                                        />
-                                        <span className="text-slate-800 font-extrabold truncate max-w-[110px]">{item.workerName}</span>
-                                      </div>
-                                    </td>
+                                          {/* Worker Name Column */}
+                                          <td className="py-3 px-2">
+                                            {isDetailEditing && edits ? (
+                                              <CustomSelect
+                                                value={edits.workerId}
+                                                onChange={(val) => updateRowDetailField(item.id, 'workerId', val)}
+                                                options={roster.map((w: any) => ({ value: w.id, label: w.name }))}
+                                                placeholder="Select Staff"
+                                                size="sm"
+                                              />
+                                            ) : (
+                                              <div className="flex items-center gap-2">
+                                                <img
+                                                  src={item.workerAvatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(item.workerName)}`}
+                                                  alt={item.workerName}
+                                                  className="w-5 h-5 rounded-full object-cover border"
+                                                />
+                                                <span className="text-slate-800 font-extrabold truncate max-w-[110px]">{item.workerName}</span>
+                                              </div>
+                                            )}
+                                          </td>
 
                                     {/* Amount Column */}
                                     <td className="py-3 px-2 text-right font-bold w-24">
@@ -654,16 +727,19 @@ export default function WorkHistory() {
                                 );
                               })}
                             </tbody>
-                          </table>
-                        </div>
+                                </table>
+                              </div>
 
-                        {/* Total allocation summary for this Date */}
-                        <div className="flex justify-between items-center bg-slate-50/50 p-2.5 rounded-xl border border-slate-100/50 mt-2 text-xs font-bold text-slate-700">
-                          <span>Total Workers: {group.items.length}</span>
-                          <span>Total Pay: <span className="text-sky-600 text-sm font-extrabold">₹{group.totalAmount}</span></span>
+                              {/* Total allocation summary for this Date */}
+                              <div className="flex justify-between items-center bg-slate-50/50 p-2.5 rounded-xl border border-slate-100/50 mt-2 text-xs font-bold text-slate-700">
+                                <span>Total Workers: {group.items.length}</span>
+                                <span>Total Pay: <span className="text-sky-600 text-sm font-extrabold">₹{group.totalAmount}</span></span>
+                              </div>
+                            </>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
 
                     {/* Grand Total of All Work Allocation */}
                     <div className="flex justify-between items-center bg-sky-600/10 p-4 rounded-2xl border border-sky-500/25 mt-4 text-xs font-bold text-slate-800">

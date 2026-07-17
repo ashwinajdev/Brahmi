@@ -664,8 +664,9 @@ export default function WorkerList() {
                 </div>
               )}
             </div>
-            <div className={`glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 ${isTableEditing ? 'overflow-visible' : 'overflow-hidden'}`}>
-              <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10 flex items-center justify-between">
+            <div className={`glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 ${isTableEditing ? 'overflow-x-auto' : 'overflow-hidden'}`}>
+              <div className={isTableEditing ? 'min-w-max' : 'w-full'}>
+                <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10 flex items-center justify-between">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Work History</h3>
                 {filteredAssignments.length > 0 && (
                   <div>
@@ -695,16 +696,15 @@ export default function WorkerList() {
                   </div>
                 )}
               </div>
-              <div className={isTableEditing ? 'overflow-visible' : 'overflow-x-auto'}>
+              <div className="overflow-visible">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50/50 dark:bg-slate-900/5 select-none">
                       {isTableEditing && <th className="py-3 px-1 w-8 text-center"></th>}
-                      <th className="py-3 px-2 w-10 text-center">SI No.</th>
-                      <th className="py-3 px-2 w-20">Date</th>
-                      <th className="py-3 px-2 w-20">Shift</th>
-                      <th className="py-3 px-2 min-w-[100px]">Work</th>
-                      <th className="py-3 px-2 w-20 text-right">Amount</th>
+                      <th className="py-3 px-1 w-8 text-center">SI No.</th>
+                      <th className={`py-3 px-1.5 ${isTableEditing ? 'w-44 min-w-[165px]' : 'w-24 min-w-[90px]'}`}>Date & Shift</th>
+                      <th className={`py-3 px-1.5 ${isTableEditing ? 'min-w-[150px]' : 'min-w-[100px]'}`}>Work</th>
+                      <th className={`py-3 pl-1.5 pr-5 text-right ${isTableEditing ? 'w-24' : 'w-16'}`}>Amount</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200">
@@ -712,7 +712,7 @@ export default function WorkerList() {
                       if (filteredAssignments.length === 0) {
                         return (
                           <tr>
-                            <td colSpan={isTableEditing ? 6 : 5} className="text-xs italic text-slate-455 py-12 text-center">
+                            <td colSpan={isTableEditing ? 5 : 4} className="text-xs italic text-slate-455 py-12 text-center">
                               No assignments found matching the selected date filters.
                             </td>
                           </tr>
@@ -726,7 +726,14 @@ export default function WorkerList() {
                           {groupedAssignments.map((assignment: any, index: number) => {
                             const edits = editedAssignments[assignment.id];
                             return (
-                              <tr key={assignment.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                              <tr
+                                key={assignment.id}
+                                className={`transition-colors ${
+                                  isTableEditing
+                                    ? 'bg-slate-50/60 dark:bg-slate-900/30 hover:bg-slate-100/50 dark:hover:bg-slate-800/30'
+                                    : 'hover:bg-slate-50/50 dark:hover:bg-slate-800/10'
+                                }`}
+                              >
                                 {isTableEditing && (
                                   <td className="py-2 px-1 text-center">
                                     <button
@@ -740,68 +747,67 @@ export default function WorkerList() {
                                     </button>
                                   </td>
                                 )}
-                                <td className="py-2 px-2 text-center text-slate-400 text-[11px] font-bold">{index + 1}</td>
+                                <td className="py-2 px-1 text-center text-slate-400 text-[10px] font-bold">{index + 1}</td>
                                 
-                                {/* Date Column */}
-                                <td className="py-2 px-2 text-slate-500 dark:text-slate-400 text-[11px] whitespace-nowrap">
+                                {/* Date & Shift Column */}
+                                <td className="py-2 px-1.5 text-slate-500 dark:text-slate-400 text-[11px] whitespace-nowrap">
                                   {isTableEditing && edits ? (
-                                    <input
-                                      type="date"
-                                      value={edits.assignedAt}
-                                      onChange={(e) => updateRowField(assignment.id, 'assignedAt', e.target.value)}
-                                      className="w-full px-2 py-1 text-xs rounded border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-250 focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer"
-                                    />
-                                  ) : (
-                                    (() => {
-                                      const fullDate = formatDate(assignment.assignedAt);
-                                      const pts = fullDate.split('/');
-                                      return pts.length === 3 ? `${pts[0]}/${pts[1]}/${pts[2].slice(-2)}` : fullDate;
-                                    })()
-                                  )}
-                                </td>
-
-                                {/* Shift Column */}
-                                <td className="py-2 px-2">
-                                  {isTableEditing && edits ? (
-                                    <div className="flex gap-1 flex-wrap">
-                                      {['Tiffin', 'Lunch', 'Dinner'].map((s) => {
-                                        const currentShifts = edits.shift ? edits.shift.split(' & ') : [];
-                                        const isSelected = currentShifts.includes(s);
-                                        return (
-                                          <button
-                                            key={s}
-                                            type="button"
-                                            onClick={() => {
-                                              let nextShifts;
-                                              if (isSelected) {
-                                                nextShifts = currentShifts.filter((item) => item !== s);
-                                              } else {
-                                                nextShifts = [...currentShifts, s];
-                                              }
-                                              if (nextShifts.length > 0) {
-                                                updateRowField(assignment.id, 'shift', nextShifts.join(' & '));
-                                              }
-                                            }}
-                                            className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition-all cursor-pointer select-none ${
-                                              isSelected
-                                                ? 'bg-sky-600 text-white border-sky-600'
-                                                : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800'
-                                            }`}
-                                          >
-                                            {s}
-                                          </button>
-                                        );
-                                      })}
+                                    <div className="flex flex-col gap-1.5 w-full min-w-[160px] max-w-[170px]">
+                                      <input
+                                        type="date"
+                                        value={edits.assignedAt}
+                                        onChange={(e) => updateRowField(assignment.id, 'assignedAt', e.target.value)}
+                                        className="w-full px-2 py-1 text-xs rounded border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-250 focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer"
+                                      />
+                                      <div className="flex gap-1">
+                                        {['Tiffin', 'Lunch', 'Dinner'].map((s) => {
+                                          const currentShifts = edits.shift ? edits.shift.split(' & ') : [];
+                                          const isSelected = currentShifts.includes(s);
+                                          return (
+                                            <button
+                                              key={s}
+                                              type="button"
+                                              onClick={() => {
+                                                let nextShifts;
+                                                if (isSelected) {
+                                                  nextShifts = currentShifts.filter((item) => item !== s);
+                                                } else {
+                                                  nextShifts = [...currentShifts, s];
+                                                }
+                                                if (nextShifts.length > 0) {
+                                                  updateRowField(assignment.id, 'shift', nextShifts.join(' & '));
+                                                }
+                                              }}
+                                              className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition-all cursor-pointer select-none ${
+                                                isSelected
+                                                  ? 'bg-sky-600 text-white border-sky-600'
+                                                  : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800'
+                                              }`}
+                                            >
+                                              {s}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
                                     </div>
                                   ) : (
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-sky-50 dark:bg-sky-950/30 border border-sky-100 dark:border-sky-900/50 text-purple-650 dark:text-sky-400 whitespace-nowrap">
-                                      {assignment.shifts.join(' & ')}
-                                    </span>
+                                    <div className="flex flex-col gap-1 items-start">
+                                      <span>
+                                        {(() => {
+                                          const fullDate = formatDate(assignment.assignedAt);
+                                          const pts = fullDate.split('/');
+                                          return pts.length === 3 ? `${pts[0]}/${pts[1]}/${pts[2].slice(-2)}` : fullDate;
+                                        })()}
+                                      </span>
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-sky-50 dark:bg-sky-950/30 border border-sky-100 dark:border-sky-900/50 text-purple-650 dark:text-sky-400 whitespace-nowrap">
+                                        {assignment.shifts.join(' & ')}
+                                      </span>
+                                    </div>
                                   )}
                                 </td>
 
                                 {/* Work Column */}
-                                <td className="py-2 px-2 text-xs font-extrabold text-slate-900 dark:text-white min-w-[150px] break-words">
+                                <td className={`py-2 px-1.5 text-xs font-extrabold text-slate-900 dark:text-white break-words ${isTableEditing ? 'min-w-[150px]' : 'min-w-[100px]'}`}>
                                   {isTableEditing && edits ? (
                                     <CustomSelect
                                       value={edits.workTitle}
@@ -816,10 +822,10 @@ export default function WorkerList() {
                                 </td>
 
                                 {/* Amount Column */}
-                                <td className="py-2 px-2 text-right text-slate-750 dark:text-slate-350 font-bold w-20">
+                                <td className={`py-2 pl-1.5 pr-5 text-right text-slate-750 dark:text-slate-350 font-bold ${isTableEditing ? 'w-24' : 'w-16'}`}>
                                   {isTableEditing && edits ? (
                                     <div className="flex items-center gap-0.5 justify-end">
-                                      <span className="text-[10px] text-slate-400 dark:text-slate-550 font-extrabold select-none">₹</span>
+                                      <span className="text-[10px] text-slate-400 dark:text-slate-555 font-extrabold select-none">₹</span>
                                       <button
                                         type="button"
                                         onClick={() => {
@@ -860,10 +866,10 @@ export default function WorkerList() {
 
                           {/* Total Row */}
                           <tr className="bg-slate-50/20 dark:bg-slate-900/10 border-t-2 border-slate-200 dark:border-slate-800 font-extrabold select-none">
-                            <td colSpan={isTableEditing ? 5 : 4} className="py-4 px-4 text-left text-xs uppercase text-slate-500 dark:text-slate-400 tracking-wider">
+                            <td colSpan={isTableEditing ? 4 : 3} className="py-3 px-1.5 text-left text-xs uppercase text-slate-500 dark:text-slate-400 tracking-wider">
                               Total Earnings
                             </td>
-                            <td className="py-4 px-4 text-right text-sm font-black text-sky-600 dark:text-sky-400 whitespace-nowrap">
+                            <td className="py-3 pl-1.5 pr-5 text-right text-sm font-black text-sky-600 dark:text-sky-400 whitespace-nowrap">
                               ₹{totalAmount}
                             </td>
                           </tr>
@@ -875,6 +881,7 @@ export default function WorkerList() {
               </div>
             </div>
           </div>
+        </div>
         )}
       </div>
     );
