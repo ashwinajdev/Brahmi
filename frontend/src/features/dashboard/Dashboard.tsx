@@ -46,7 +46,7 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ onNavigate }: DashboardProps) {
-  const { data: stats, isLoading, isError, error, isFetching } = useQuery<DashboardStats>({
+  const { data: stats, isLoading, isError, error } = useQuery<DashboardStats>({
     queryKey: ['dashboard-stats'],
     queryFn: () => api.get<DashboardStats>('/dashboard/stats'),
     refetchInterval: 15000,       // Refresh every 15 seconds
@@ -87,10 +87,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   }
 
   const {
-    totalWorks,
     todaysWorksCount,
-    statusCounts,
-    totalActiveWorkers,
     assignedWorkersCount,
     unassignedCount,
     unassignedWorks,
