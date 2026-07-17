@@ -79,6 +79,9 @@
 /* Custom Base Styles */
 html {
   font-size: 108%;
+  /* Prevent browser pull-to-refresh on mobile */
+  overscroll-behavior: none;
+  height: 100%;
 }
 
 body {
@@ -87,6 +90,18 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
+  /* Prevent mobile browser pull-to-refresh */
+  overscroll-behavior: none;
+  height: 100%;
+  /* Prevent layout shift from scrollbar */
+  overflow: hidden;
+}
+
+/* Root element must fill full height for overscroll containment to work */
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Scrollbar Customization */

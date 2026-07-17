@@ -55,7 +55,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col md:flex-row">
+    <div className="h-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col md:flex-row overflow-hidden">
       {/* Offline Banner */}
       {isOffline && (
         <div className="fixed top-0 left-0 right-0 z-50 bg-red-600 text-white text-xs font-semibold py-1.5 px-4 flex items-center justify-center gap-1.5 shadow-md animate-fade-in">
@@ -133,7 +133,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
       </aside>
 
       {/* Mobile Shell Container */}
-      <div className="flex-grow flex flex-col h-screen overflow-hidden">
+      <div className="flex-grow flex flex-col h-full overflow-hidden">
         {/* Mobile Header */}
         <header className={`md:hidden h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 shrink-0 sticky top-0 z-30 ${isOffline ? 'mt-7' : ''}`} aria-label="Mobile app header">
           <div className="flex items-center gap-2">
@@ -289,7 +289,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-grow p-4 md:p-8 overflow-y-auto bg-slate-50 dark:bg-slate-950 select-none pb-24 md:pb-8" id="main-content">
+        <main className="flex-grow p-3 md:p-8 overflow-y-auto overscroll-contain bg-slate-50 dark:bg-slate-950 select-none pb-20 md:pb-8" id="main-content" style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
           <div className="max-w-7xl mx-auto w-full">
             {children}
           </div>
