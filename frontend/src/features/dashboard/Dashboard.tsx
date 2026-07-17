@@ -6,7 +6,6 @@ import {
   Users,
   AlertCircle,
   AlertTriangle,
-  Clock,
   ChevronRight,
   TrendingUp,
   UserCheck
@@ -36,9 +35,7 @@ interface DashboardStats {
     completed: number;
   };
   totalActiveWorkers: number;
-  overdueCount: number;
   unassignedCount: number;
-  overdueWorks: TaskSummary[];
   unassignedWorks: TaskSummary[];
   workload: WorkerWorkload[];
 }
@@ -92,9 +89,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
     totalWorks,
     statusCounts,
     totalActiveWorkers,
-    overdueCount,
     unassignedCount,
-    overdueWorks,
     unassignedWorks,
     workload
   } = stats!;
@@ -131,7 +126,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       </div>
 
       {/* Main Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+      <div className="grid grid-cols-3 gap-2.5">
         {/* Total Works */}
         <div
           onClick={() => onNavigate('works')}
@@ -170,89 +165,12 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           </div>
         </div>
 
-        {/* Overdue Count */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl flex items-center justify-between shadow-sm hover:shadow-md transition-all select-none">
-          <div className="space-y-0.5">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Overdue Tasks</span>
-            <p className={`text-2xl font-display font-extrabold ${overdueCount > 0 ? 'text-red-500' : 'text-slate-900 dark:text-white'}`}>{overdueCount}</p>
-            <p className="text-[10px] text-slate-400 font-medium">Requires immediate action</p>
-          </div>
-          <div className={`p-2.5 rounded-lg ${overdueCount > 0 ? 'bg-red-500/10 text-red-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
-            <Clock className="w-5 h-5" aria-hidden="true" />
-          </div>
-        </div>
-
-        {/* Unassigned Count */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl flex items-center justify-between shadow-sm hover:shadow-md transition-all select-none">
-          <div className="space-y-0.5">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Unassigned Tasks</span>
-            <p className={`text-2xl font-display font-extrabold ${unassignedCount > 0 ? 'text-orange-500' : 'text-slate-900 dark:text-white'}`}>{unassignedCount}</p>
-            <p className="text-[10px] text-slate-400 font-medium">Tasks needing workers</p>
-          </div>
-          <div className={`p-2.5 rounded-lg ${unassignedCount > 0 ? 'bg-orange-500/10 text-orange-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
-            <AlertTriangle className="w-5 h-5" aria-hidden="true" />
-          </div>
-        </div>
       </div>
 
       {/* Grid for Workload & Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Left Column: Alerts & Attention items (2/3 width) */}
         <div className="lg:col-span-2 space-y-3">
-          {/* Overdue Tasks List */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/80">
-              <h2 className="font-display font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-red-500" aria-hidden="true" /> Overdue Tasks
-                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-500">
-                  {overdueCount}
-                </span>
-              </h2>
-              {overdueCount > 0 && (
-                <button
-                  onClick={() => onNavigate('works')}
-                  className="text-xs font-bold text-sky-600 dark:text-sky-400 flex items-center gap-0.5 hover:underline cursor-pointer"
-                >
-                  View All <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-            <div className="mt-3 divide-y divide-slate-100 dark:divide-slate-800/60">
-              {overdueWorks.length === 0 ? (
-                <div className="py-4 text-center text-sm text-slate-400">
-                  🎉 Good job! No tasks are currently overdue.
-                </div>
-              ) : (
-                overdueWorks.map((task) => (
-                  <div
-                    key={task.id}
-                    onClick={() => onNavigate('works', task.id)}
-                    className="py-2 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/20 px-2 rounded-lg transition-all cursor-pointer group"
-                  >
-                    <div className="space-y-0.5 pr-3 truncate">
-                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors truncate">
-                        {task.title}
-                      </p>
-                      <p className="text-[10px] text-red-500 font-semibold flex items-center gap-1">
-                        Due: {formatDate(task.dueDate)}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase badge-${task.priority}`}>
-                        {task.priority}
-                      </span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase badge-${task.status}`}>
-                        {task.status.replace('_', ' ')}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Unassigned Tasks List */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/80">
               <h2 className="font-display font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">

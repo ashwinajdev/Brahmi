@@ -11,8 +11,6 @@ router.get('/stats', authMiddleware, async (req: AuthenticatedRequest, res: Resp
     // Rollover past active tasks to today
     await autoUpdatePastWorks();
 
-    const now = new Date();
-
     // 1. Get total works by status
     const worksByStatus = await prisma.work.groupBy({
       by: ['status'],
@@ -39,20 +37,6 @@ router.get('/stats', authMiddleware, async (req: AuthenticatedRequest, res: Resp
     // 2. Total active workers count
     const totalActiveWorkers = await prisma.worker.count({
       where: { isActive: true },
-    });
-
-    // 3. Overdue works count (dueDate < now and status != completed)
-    const overdueWorks = await prisma.work.findMany({
-      where: {
-        dueDate: { lt: now },
-        status: { not: 'completed' },
-      },
-      include: {
-        assignments: {
-          where: { unassignedAt: null },
-          include: { worker: true },
-        },
-      },
     });
 
     // 4. Unassigned works count (status != completed and no active assignments)
@@ -90,15 +74,7 @@ router.get('/stats', authMiddleware, async (req: AuthenticatedRequest, res: Resp
       totalWorks,
       statusCounts,
       totalActiveWorkers,
-      overdueCount: overdueWorks.length,
       unassignedCount: unassignedWorks.length,
-      overdueWorks: overdueWorks.map((w) => ({
-        id: w.id,
-        title: w.title,
-        dueDate: w.dueDate,
-        priority: w.priority,
-        status: w.status,
-      })),
       unassignedWorks: unassignedWorks.map((w) => ({
         id: w.id,
         title: w.title,
