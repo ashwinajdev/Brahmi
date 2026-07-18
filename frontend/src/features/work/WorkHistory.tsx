@@ -264,10 +264,12 @@ export default function WorkHistory() {
       return Promise.all(promises);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workDetails', selectedWorkId] });
+      queryClient.invalidateQueries({ queryKey: ['work-details', selectedWorkId] });
+      queryClient.invalidateQueries({ queryKey: ['works'] });
       queryClient.invalidateQueries({ queryKey: ['completedWorks'] });
       queryClient.invalidateQueries({ queryKey: ['worker-history'] });
       queryClient.invalidateQueries({ queryKey: ['workers'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       addToast('All work history logs saved successfully', 'success');
       setIsDetailEditing(false);
     },
@@ -591,144 +593,151 @@ export default function WorkHistory() {
 
                           {!isCollapsed && (
                             <>
-                              <div className={isDetailEditing ? 'overflow-visible' : 'overflow-x-auto'}>
-                                <table className="w-full text-left border-collapse">
-                                  <thead>
-                                    <tr className="border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">
-                                      <th className="py-2.5 px-2 w-10 text-center">SI No.</th>
-                                      <th className="py-2.5 px-2 w-20">Shift</th>
-                                      <th className={`py-2.5 px-2 ${isDetailEditing ? 'min-w-[150px]' : 'min-w-[120px]'}`}>Worker Name</th>
-                                      <th className="py-2.5 px-2 w-24 text-right">Amount</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
-                                    {group.items.map((item: any, index: number) => {
-                                      const edits = editedDetails[item.id];
-                                      return (
+                              {isDetailEditing ? (
+                                <div className="space-y-3 py-2">
+                                  {group.items.map((item: any, index: number) => {
+                                    const edits = editedDetails[item.id];
+                                    if (!edits) return null;
+                                    return (
+                                      <div
+                                        key={item.id}
+                                        className="flex flex-col md:flex-row md:items-center justify-between gap-3.5 p-4 bg-slate-50/50 dark:bg-slate-900/30 border border-slate-150 dark:border-slate-800 rounded-2xl"
+                                      >
+                                        {/* Left: SI No + Shift Selector */}
+                                        <div className="flex flex-wrap items-center gap-3">
+                                          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">
+                                            #{index + 1}
+                                          </span>
+                                          <div className="flex gap-1 flex-wrap">
+                                            {['Tiffin', 'Lunch', 'Dinner'].map((s) => {
+                                              const currentShifts = edits.shift ? edits.shift.split(' & ') : [];
+                                              const isSelected = currentShifts.includes(s);
+                                              return (
+                                                <button
+                                                  key={s}
+                                                  type="button"
+                                                  onClick={() => {
+                                                    let nextShifts;
+                                                    if (isSelected) {
+                                                      nextShifts = currentShifts.filter((item) => item !== s);
+                                                    } else {
+                                                      nextShifts = [...currentShifts, s];
+                                                    }
+                                                    if (nextShifts.length > 0) {
+                                                      updateRowDetailField(item.id, 'shift', nextShifts.join(' & '));
+                                                      const currentAmt = parseFloat(edits?.amount || '0') || 0;
+                                                      const newAmt = isSelected 
+                                                        ? Math.max(0, currentAmt - 500) 
+                                                        : currentAmt + 500;
+                                                      updateRowDetailField(item.id, 'amount', newAmt.toString());
+                                                    }
+                                                  }}
+                                                  className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer select-none ${
+                                                    isSelected
+                                                      ? 'bg-sky-600 text-white border-sky-600 shadow-sm'
+                                                      : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-850 hover:bg-slate-50'
+                                                  }`}
+                                                >
+                                                  {s}
+                                                </button>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+
+                                        {/* Center: Worker Selection */}
+                                        <div className="flex-grow w-full md:max-w-xs">
+                                          <CustomSelect
+                                            value={edits.workerId}
+                                            onChange={(val) => updateRowDetailField(item.id, 'workerId', val)}
+                                            options={roster.map((w: any) => ({ value: w.id, label: w.name }))}
+                                            placeholder="Select Staff"
+                                            size="sm"
+                                          />
+                                        </div>
+
+                                        {/* Right: Amount Selection */}
+                                        <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto border-t md:border-t-0 pt-3 md:pt-0 border-slate-100 dark:border-slate-800/80">
+                                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-extrabold select-none md:hidden">Amount</span>
+                                          <div className="flex items-center gap-1">
+                                            <span className="text-[11px] text-slate-400 font-extrabold select-none">₹</span>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                const currentVal = parseFloat(edits.amount) || 0;
+                                                const newVal = Math.max(0, currentVal - 50);
+                                                updateRowDetailField(item.id, 'amount', newVal === 0 ? '' : newVal.toString());
+                                              }}
+                                              className="w-7 h-7 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200 rounded-lg border border-slate-200/60 dark:border-slate-700 transition-colors select-none text-xs font-black cursor-pointer shadow-sm"
+                                            >
+                                              -
+                                            </button>
+                                            <input
+                                              type="number"
+                                              value={edits.amount}
+                                              onChange={(e) => updateRowDetailField(item.id, 'amount', e.target.value)}
+                                              placeholder="-"
+                                              className="w-14 text-center px-1.5 py-1 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-500 font-semibold"
+                                            />
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                const currentVal = parseFloat(edits.amount) || 0;
+                                                const newVal = currentVal + 50;
+                                                updateRowDetailField(item.id, 'amount', newVal.toString());
+                                              }}
+                                              className="w-7 h-7 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200 rounded-lg border border-slate-200/60 dark:border-slate-700 transition-colors select-none text-xs font-black cursor-pointer shadow-sm"
+                                            >
+                                              +
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <div className="overflow-x-auto">
+                                  <table className="w-full text-left border-collapse">
+                                    <thead>
+                                      <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 select-none">
+                                        <th className="py-2.5 px-2 w-10 text-center">SI No.</th>
+                                        <th className="py-2.5 px-2 w-20">Shift</th>
+                                        <th className="py-2.5 px-2 min-w-[120px]">Worker Name</th>
+                                        <th className="py-2.5 px-2 w-24 text-right">Amount</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                      {group.items.map((item: any, index: number) => (
                                         <tr
                                           key={item.id}
-                                          className={`transition-colors ${
-                                            isDetailEditing
-                                              ? 'bg-slate-50/60 dark:bg-slate-900/30 hover:bg-slate-100/50 dark:hover:bg-slate-800/30'
-                                              : 'hover:bg-slate-50/50 dark:hover:bg-slate-800/10'
-                                          }`}
+                                          className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors"
                                         >
                                           <td className="py-3 px-2 text-center text-slate-400 text-[11px] font-bold">{index + 1}</td>
-                                          
-                                          {/* Shift Column */}
                                           <td className="py-3 px-2">
-                                            {isDetailEditing && edits ? (
-                                              <div className="flex gap-1 flex-wrap">
-                                                {['Tiffin', 'Lunch', 'Dinner'].map((s) => {
-                                                  const currentShifts = edits.shift ? edits.shift.split(' & ') : [];
-                                                  const isSelected = currentShifts.includes(s);
-                                                  return (
-                                                    <button
-                                                      key={s}
-                                                      type="button"
-                                                      onClick={() => {
-                                                        let nextShifts;
-                                                        if (isSelected) {
-                                                          nextShifts = currentShifts.filter((item) => item !== s);
-                                                        } else {
-                                                          nextShifts = [...currentShifts, s];
-                                                        }
-                                                        if (nextShifts.length > 0) {
-                                                          updateRowDetailField(item.id, 'shift', nextShifts.join(' & '));
-                                                          
-                                                          // Auto adjust pay: add 500 when adding shift, subtract 500 when removing shift
-                                                          const currentAmt = parseFloat(edits?.amount || '0') || 0;
-                                                          const newAmt = isSelected 
-                                                            ? Math.max(0, currentAmt - 500) 
-                                                            : currentAmt + 500;
-                                                          updateRowDetailField(item.id, 'amount', newAmt.toString());
-                                                        }
-                                                      }}
-                                                      className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition-all cursor-pointer select-none ${
-                                                        isSelected
-                                                          ? 'bg-sky-600 text-white border-sky-600'
-                                                          : 'bg-white text-slate-500 border-slate-200'
-                                                      }`}
-                                                    >
-                                                      {s}
-                                                    </button>
-                                                  );
-                                                })}
-                                              </div>
-                                            ) : (
-                                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-sky-50 border border-sky-100 text-sky-600 whitespace-nowrap">
-                                                {item.shifts.join(' & ')}
-                                              </span>
-                                            )}
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-sky-50 border border-sky-100 text-sky-600 dark:bg-sky-950/40 dark:border-sky-900/50 dark:text-sky-400 whitespace-nowrap">
+                                              {item.shifts.join(' & ')}
+                                            </span>
                                           </td>
-
-                                          {/* Worker Name Column */}
                                           <td className="py-3 px-2">
-                                            {isDetailEditing && edits ? (
-                                              <CustomSelect
-                                                value={edits.workerId}
-                                                onChange={(val) => updateRowDetailField(item.id, 'workerId', val)}
-                                                options={roster.map((w: any) => ({ value: w.id, label: w.name }))}
-                                                placeholder="Select Staff"
-                                                size="sm"
+                                            <div className="flex items-center gap-2">
+                                              <img
+                                                src={item.workerAvatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(item.workerName)}`}
+                                                alt={item.workerName}
+                                                className="w-5 h-5 rounded-full object-cover border dark:border-slate-800"
                                               />
-                                            ) : (
-                                              <div className="flex items-center gap-2">
-                                                <img
-                                                  src={item.workerAvatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(item.workerName)}`}
-                                                  alt={item.workerName}
-                                                  className="w-5 h-5 rounded-full object-cover border"
-                                                />
-                                                <span className="text-slate-800 font-extrabold truncate max-w-[110px]">{item.workerName}</span>
-                                              </div>
-                                            )}
+                                              <span className="text-slate-800 dark:text-slate-200 font-extrabold truncate max-w-[110px]">{item.workerName}</span>
+                                            </div>
                                           </td>
-
-                                    {/* Amount Column */}
-                                    <td className="py-3 px-2 text-right font-bold w-24">
-                                      {isDetailEditing && edits ? (
-                                        <div className="flex items-center gap-0.5 justify-end">
-                                          <span className="text-[10px] text-slate-400 font-extrabold select-none mr-0.5">₹</span>
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              const currentVal = parseFloat(edits.amount) || 0;
-                                              const newVal = Math.max(0, currentVal - 50);
-                                              updateRowDetailField(item.id, 'amount', newVal === 0 ? '' : newVal.toString());
-                                            }}
-                                            className="w-5 h-5 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 rounded border border-slate-200/65 transition-colors select-none text-[10px] font-black cursor-pointer shadow-sm"
-                                          >
-                                            -
-                                          </button>
-                                          <input
-                                            type="number"
-                                            value={edits.amount}
-                                            onChange={(e) => updateRowDetailField(item.id, 'amount', e.target.value)}
-                                            placeholder="-"
-                                            className="w-10 text-center px-0.5 py-0.5 text-xs rounded border border-slate-200 bg-white text-slate-750 focus:outline-none focus:ring-1 focus:ring-sky-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-semibold"
-                                          />
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              const currentVal = parseFloat(edits.amount) || 0;
-                                              const newVal = currentVal + 50;
-                                              updateRowDetailField(item.id, 'amount', newVal.toString());
-                                            }}
-                                            className="w-5 h-5 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 rounded border border-slate-200/65 transition-colors select-none text-[10px] font-black cursor-pointer shadow-sm"
-                                          >
-                                            +
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        `₹${item.amount}`
-                                      )}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                                </table>
-                              </div>
+                                          <td className="py-3 px-2 text-right font-bold w-24 text-slate-900 dark:text-white">
+                                            ₹{item.amount}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
 
                               {/* Total allocation summary for this Date */}
                               <div className="flex justify-between items-center bg-slate-50/50 p-2.5 rounded-xl border border-slate-100/50 mt-2 text-xs font-bold text-slate-700">
@@ -767,9 +776,9 @@ export default function WorkHistory() {
   const filteredWorks = groupedCompletedWorks;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Search and Action Bar */}
-      <div className="glass-panel p-4 rounded-2xl border border-slate-200 flex items-center justify-between bg-white">
+      <div className="glass-panel p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900">
         {/* Search & Add */}
         <div className="flex items-center gap-2 w-full flex-nowrap">
           <div className="relative flex-grow min-w-0 sm:max-w-xs">
@@ -780,7 +789,7 @@ export default function WorkHistory() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-850 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500"
               placeholder="Search tasks..."
             />
           </div>
@@ -800,58 +809,58 @@ export default function WorkHistory() {
           <span className="text-xs font-semibold">Loading tasks...</span>
         </div>
       ) : isError ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center p-6 bg-white border border-slate-200 rounded-2xl">
+        <div className="flex flex-col items-center justify-center py-12 text-center p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
           <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-          <h3 className="text-lg font-bold text-slate-900">Failed to load history</h3>
-          <p className="text-sm text-slate-500 mt-1">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">Failed to load history</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             {error instanceof Error ? error.message : 'Please check your connection and try again.'}
           </p>
         </div>
       ) : filteredWorks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center p-6 bg-white border border-slate-200 rounded-3xl">
-          <Briefcase className="w-10 h-10 text-slate-350 mb-3" />
-          <h4 className="text-sm font-bold text-slate-900">No Tasks Found</h4>
-          <p className="text-xs text-slate-400 mt-1">
+        <div className="flex flex-col items-center justify-center py-20 text-center p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
+          <Briefcase className="w-10 h-10 text-slate-350 dark:text-slate-500 mb-3" />
+          <h4 className="text-sm font-bold text-slate-900 dark:text-white">No Tasks Found</h4>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
             {searchTerm 
               ? 'Try refining your search terms.' 
               : 'Tasks will appear here.'}
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
           {filteredWorks.map((work, index) => (
             <div 
               key={work.id} 
               onClick={() => setSelectedWorkId(work.id)}
-              className="bg-white border border-slate-200 hover:border-sky-300 dark:hover:border-sky-400 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-4 group"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 hover:border-sky-500 dark:hover:border-sky-400 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-3.5 group"
             >
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {(work as any).occurrencesCount > 1 && (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase bg-sky-500/10 text-sky-600 rounded-md border border-sky-500/20">
+                      <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase bg-sky-500/10 text-sky-600 dark:bg-sky-500/20 dark:text-sky-400 rounded-md border border-sky-500/20">
                         {(work as any).occurrencesCount} Instances
                       </span>
                     </div>
                   </div>
                 )}
-                <h4 className="font-extrabold text-slate-900 group-hover:text-sky-600 transition-colors text-base tracking-tight leading-snug text-left">
+                <h4 className="font-extrabold text-slate-900 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors text-sm md:text-base tracking-tight leading-snug text-left">
                   {index + 1}. {work.title}
                 </h4>
                 {work.description && 
                  work.description !== 'General Task Details' && 
                  work.description !== 'No description provided.' && (
-                  <p className="text-xs text-slate-450 line-clamp-2 text-left">
+                  <p className="text-xs text-slate-450 dark:text-slate-400 line-clamp-2 text-left">
                     {work.description}
                   </p>
                 )}
               </div>
 
               {(work.location || (work.category && work.category !== 'General')) && (
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-455 font-bold">
+                <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[10px] text-slate-455 dark:text-slate-400 font-bold">
                   {work.category && work.category !== 'General' ? (
                     <div className="flex items-center gap-1.5">
-                      <Tag className="w-3.5 h-3.5 text-slate-350" />
+                      <Tag className="w-3.5 h-3.5 text-slate-350 dark:text-slate-500" />
                       <span>{work.category}</span>
                     </div>
                   ) : (
@@ -859,7 +868,7 @@ export default function WorkHistory() {
                   )}
                   {work.location && (
                     <div className="flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-slate-350" />
+                      <MapPin className="w-3.5 h-3.5 text-slate-350 dark:text-slate-500" />
                       <span>{work.location}</span>
                     </div>
                   )}

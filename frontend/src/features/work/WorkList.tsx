@@ -167,6 +167,8 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
       addToast('Worker assignments saved successfully', 'success');
       setIsEditingAssignments(false);
       setIsEditingAssignmentDetails(false);
+      setSelectedWorkId(null);
+      if (onClearSelection) onClearSelection();
     },
     onError: (err: any) => addToast(err.message || 'Failed to save assignments', 'error'),
   });
@@ -453,46 +455,72 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                     </td>
                   </tr>
                 ) : (
-                  activeWorksOnly.map((work) => (
-                    <tr
-                      key={work.id}
-                      className="hover:bg-slate-50 dark:hover:bg-slate-800/10 cursor-pointer transition-colors"
-                      onClick={() => setSelectedWorkId(work.id)}
-                    >
-                      <td className="p-4 max-w-xs">
-                        <p className="font-bold text-slate-800 dark:text-slate-200 hover:text-sky-500 transition-colors truncate">
-                          {work.title}
-                        </p>
-                      </td>
-                      <td className="p-4 text-xs font-semibold">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                          {formatDate(work.dueDate)}
-                        </span>
-                      </td>
-                      <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                        <AvatarStack workers={work.assignedWorkers} />
-                      </td>
-                      <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => openEditModal(work)}
-                            className="p-1.5 text-slate-400 hover:text-sky-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
-                            title="Edit task details"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteWork(work.id)}
-                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
-                            title="Remove task"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                  activeWorksOnly.map((work) => {
+                    const isOverdue = (() => {
+                      if (!work.dueDate) return false;
+                      const taskDate = new Date(work.dueDate);
+                      if (isNaN(taskDate.getTime())) return false;
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      const taskLocalMidnight = new Date(
+                        taskDate.getUTCFullYear(),
+                        taskDate.getUTCMonth(),
+                        taskDate.getUTCDate(),
+                        0, 0, 0, 0
+                      );
+                      return taskLocalMidnight.getTime() < today.getTime();
+                    })();
+
+                    return (
+                      <tr
+                        key={work.id}
+                        className={`hover:bg-slate-50 dark:hover:bg-slate-800/10 cursor-pointer transition-colors ${
+                          isOverdue ? 'bg-red-50/10 dark:bg-red-950/5' : ''
+                        }`}
+                        onClick={() => setSelectedWorkId(work.id)}
+                      >
+                        <td className="p-4 max-w-xs">
+                          <div className="flex items-center gap-2 truncate">
+                            <p className="font-bold text-slate-800 dark:text-slate-200 hover:text-sky-500 transition-colors truncate">
+                              {work.title}
+                            </p>
+                            {isOverdue && (
+                              <span className="shrink-0 text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-950/40 text-red-500 border border-red-200 dark:border-red-900/50">
+                                Overdue
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-4 text-xs font-semibold">
+                          <span className={`flex items-center gap-1 ${isOverdue ? 'text-red-400 dark:text-red-500' : ''}`}>
+                            <Calendar className="w-3.5 h-3.5" />
+                            {formatDate(work.dueDate)}
+                          </span>
+                        </td>
+                        <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                          <AvatarStack workers={work.assignedWorkers} />
+                        </td>
+                        <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => openEditModal(work)}
+                              className="p-1.5 text-slate-400 hover:text-sky-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                              title="Edit task details"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteWork(work.id)}
+                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                              title="Remove task"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -506,6 +534,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
         onClose={closeCreateModal}
         editingWork={editingWork}
         defaultStatus="pending"
+        defaultToToday={true}
       />
 
       {/* Task Details & Assignment Drawer/Modal */}
@@ -969,20 +998,45 @@ function WorkCard({ work, onClick }: WorkCardProps) {
   // Prevent click propagation when clicking stack
   const stopProp = (e: React.MouseEvent) => e.stopPropagation();
 
+  // Determine if this task is overdue (dueDate is before today)
+  const isOverdue = (() => {
+    if (!work.dueDate) return false;
+    const taskDate = new Date(work.dueDate);
+    if (isNaN(taskDate.getTime())) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const taskLocalMidnight = new Date(
+      taskDate.getUTCFullYear(),
+      taskDate.getUTCMonth(),
+      taskDate.getUTCDate(),
+      0, 0, 0, 0
+    );
+    return taskLocalMidnight.getTime() < today.getTime();
+  })();
+
   return (
     <div
       onClick={onClick}
-      className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-850 p-3 rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 dark:hover:border-slate-800/80 transition-all cursor-pointer group flex flex-col justify-between min-h-[85px]"
+      className={`bg-white dark:bg-slate-900 border p-3 rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between min-h-[85px] ${
+        isOverdue
+          ? 'border-red-200 dark:border-red-900/50 hover:border-red-300 dark:hover:border-red-800'
+          : 'border-slate-150 dark:border-slate-850 dark:hover:border-slate-800/80'
+      }`}
     >
       <div className="flex items-start justify-between gap-3">
         <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors leading-normal line-clamp-2">
           {work.title}
         </h4>
+        {isOverdue && (
+          <span className="shrink-0 text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-950/40 text-red-500 border border-red-200 dark:border-red-900/50">
+            Overdue
+          </span>
+        )}
       </div>
 
       {/* Footer Block: Date, Avatars */}
       <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 font-bold border-t border-slate-50 dark:border-slate-800/40 pt-2">
-        <span className="flex items-center gap-1">
+        <span className={`flex items-center gap-1 ${isOverdue ? 'text-red-400 dark:text-red-500' : ''}`}>
           <Calendar className="w-3.5 h-3.5" />
           {formatDate(work.dueDate)}
         </span>

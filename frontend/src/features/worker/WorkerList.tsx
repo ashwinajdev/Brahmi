@@ -201,6 +201,8 @@ export default function WorkerList() {
     mutationFn: (newWorker: any) => api.post('/workers', newWorker),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workers'] });
+      queryClient.invalidateQueries({ queryKey: ['works'] });
+      queryClient.invalidateQueries({ queryKey: ['work-details'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       addToast('Worker added successfully', 'success');
       closeModal();
@@ -216,6 +218,9 @@ export default function WorkerList() {
       api.put(`/workers/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workers'] });
+      queryClient.invalidateQueries({ queryKey: ['works'] });
+      queryClient.invalidateQueries({ queryKey: ['work-details'] });
+      queryClient.invalidateQueries({ queryKey: ['completedWorks'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       addToast('Worker updated successfully', 'success');
       closeModal();
@@ -230,6 +235,9 @@ export default function WorkerList() {
     mutationFn: (id: string) => api.delete(`/workers/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workers'] });
+      queryClient.invalidateQueries({ queryKey: ['works'] });
+      queryClient.invalidateQueries({ queryKey: ['work-details'] });
+      queryClient.invalidateQueries({ queryKey: ['completedWorks'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       addToast('Worker deleted successfully', 'success');
       setHistoryWorkerId(null);
@@ -247,6 +255,9 @@ export default function WorkerList() {
       api.put(`/workers/${id}`, { isActive }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workers'] });
+      queryClient.invalidateQueries({ queryKey: ['works'] });
+      queryClient.invalidateQueries({ queryKey: ['work-details'] });
+      queryClient.invalidateQueries({ queryKey: ['completedWorks'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
     },
     onError: (err: any) => {
@@ -373,6 +384,10 @@ export default function WorkerList() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['worker-history', historyWorkerId] });
       queryClient.invalidateQueries({ queryKey: ['workers'] });
+      queryClient.invalidateQueries({ queryKey: ['works'] });
+      queryClient.invalidateQueries({ queryKey: ['work-details'] });
+      queryClient.invalidateQueries({ queryKey: ['completedWorks'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       addToast('All work history logs saved successfully', 'success');
       setIsTableEditing(false);
     },
@@ -390,6 +405,10 @@ export default function WorkerList() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['worker-history', historyWorkerId] });
       queryClient.invalidateQueries({ queryKey: ['workers'] });
+      queryClient.invalidateQueries({ queryKey: ['works'] });
+      queryClient.invalidateQueries({ queryKey: ['work-details'] });
+      queryClient.invalidateQueries({ queryKey: ['completedWorks'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       addToast('Assignment record deleted successfully', 'success');
     },
     onError: (err: any) => {

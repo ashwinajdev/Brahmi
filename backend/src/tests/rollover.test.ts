@@ -67,7 +67,7 @@ describe('Auto Rollover of Past Uncompleted Tasks', () => {
     });
   });
 
-  it('should auto rollover past uncompleted tasks and not touch others', async () => {
+  it('should preserve past uncompleted tasks and not touch others (no db mutation)', async () => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     yesterday.setUTCHours(0, 0, 0, 0);
@@ -76,20 +76,14 @@ describe('Auto Rollover of Past Uncompleted Tasks', () => {
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setUTCHours(0, 0, 0, 0);
 
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const date = now.getDate();
-    const todayUTC = new Date(Date.UTC(year, month, date));
-
     // Call rollover function
     await autoUpdatePastWorks();
 
-    // Verify past incomplete task got updated to today UTC
+    // Verify past incomplete task remained at yesterday's date (no database mutation)
     const updatedPastWork = await prisma.work.findUnique({
       where: { id: testPastWorkId },
     });
-    expect(updatedPastWork?.dueDate.toISOString()).toBe(todayUTC.toISOString());
+    expect(updatedPastWork?.dueDate.toISOString()).toBe(yesterday.toISOString());
 
     // Verify past completed task remained at yesterday's date
     const updatedCompletedPastWork = await prisma.work.findUnique({
