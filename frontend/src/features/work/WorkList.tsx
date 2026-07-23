@@ -17,7 +17,8 @@ import {
   Trash2,
   List,
   Kanban,
-  AlertCircle
+  AlertCircle,
+  Check
 } from 'lucide-react';
 
 interface Worker {
@@ -136,8 +137,8 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
 
 
 
-  // Mutation: Delete/Remove Work (Mark as completed to archive from active list and preserve history)
-  const deleteWorkMutation = useMutation({
+  // Mutation: Complete Work (Mark as completed to archive from active list and preserve history)
+  const completeWorkMutation = useMutation({
     mutationFn: (id: string) => api.put(`/works/${id}`, { status: 'completed' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['works'] });
@@ -145,11 +146,27 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       queryClient.invalidateQueries({ queryKey: ['worker-history'] });
       queryClient.invalidateQueries({ queryKey: ['workers'] });
-      addToast('Work task completed and removed from active list', 'success');
+      addToast('Work task marked as completed', 'success');
       setSelectedWorkId(null);
       if (onClearSelection) onClearSelection();
     },
-    onError: (err: any) => addToast(err.message || 'Failed to remove work task', 'error'),
+    onError: (err: any) => addToast(err.message || 'Failed to complete work task', 'error'),
+  });
+
+  // Mutation: Permanently Delete Work task from DB
+  const deleteWorkMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/works/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['works'] });
+      queryClient.invalidateQueries({ queryKey: ['completedWorks'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['worker-history'] });
+      queryClient.invalidateQueries({ queryKey: ['workers'] });
+      addToast('Work task deleted successfully', 'success');
+      setSelectedWorkId(null);
+      if (onClearSelection) onClearSelection();
+    },
+    onError: (err: any) => addToast(err.message || 'Failed to delete work task', 'error'),
   });
 
 
@@ -188,11 +205,20 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
     setEditingWork(null);
   };
 
+  const handleCompleteWork = (id: string) => {
+    showConfirm({
+      title: 'Complete Task?',
+      message: 'Are you sure you want to mark this task as completed? It will be moved to the history tab.',
+      confirmText: 'Complete',
+      onConfirm: () => completeWorkMutation.mutate(id),
+    });
+  };
+
   const handleDeleteWork = (id: string) => {
     showConfirm({
-      title: 'Remove Task?',
-      message: 'Are you sure you want to remove this task from the active list? Its work history and logs will be preserved in the history tab.',
-      confirmText: 'Remove',
+      title: 'Delete Task?',
+      message: 'Are you sure you want to permanently delete this task and all its worker assignments? This action cannot be undone.',
+      confirmText: 'Delete',
       isDestructive: true,
       onConfirm: () => deleteWorkMutation.mutate(id),
     });
@@ -503,6 +529,13 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                         <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1">
                             <button
+                              onClick={() => handleCompleteWork(work.id)}
+                              className="p-1.5 text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-colors cursor-pointer"
+                              title="Complete task"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </button>
+                            <button
                               onClick={() => openEditModal(work)}
                               className="p-1.5 text-slate-400 hover:text-sky-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
                               title="Edit task details"
@@ -512,7 +545,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                             <button
                               onClick={() => handleDeleteWork(work.id)}
                               className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
-                              title="Remove task"
+                              title="Delete task permanently"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -587,18 +620,26 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                     </h2>
 
                     {/* Actions Section */}
-                    <div className="flex items-center gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800/80">
-                      <button
-                        onClick={() => openEditModal(workDetails)}
-                        className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-semibold transition-colors cursor-pointer select-none text-slate-600 dark:text-slate-300"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" /> Edit details
-                      </button>
+                    <div className="flex flex-col gap-2 pt-3 border-t border-slate-100 dark:border-slate-800/80">
+                      <div className="flex items-center gap-2.5">
+                        <button
+                          onClick={() => handleCompleteWork(workDetails.id)}
+                          className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition-all cursor-pointer select-none shadow-sm"
+                        >
+                          <Check className="w-3.5 h-3.5" /> Complete Task
+                        </button>
+                        <button
+                          onClick={() => openEditModal(workDetails)}
+                          className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-semibold transition-colors cursor-pointer select-none text-slate-600 dark:text-slate-300"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" /> Edit details
+                        </button>
+                      </div>
                       <button
                         onClick={() => handleDeleteWork(workDetails.id)}
-                        className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl text-xs font-semibold transition-all cursor-pointer select-none"
+                        className="w-full flex items-center justify-center gap-1.5 px-4 py-1.5 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl text-[11px] font-semibold transition-all cursor-pointer select-none"
                       >
-                        <Trash2 className="w-3.5 h-3.5" /> Remove Task
+                        <Trash2 className="w-3 h-3" /> Delete Task (Permanently)
                       </button>
                     </div>
                   </div>
