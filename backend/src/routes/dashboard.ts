@@ -54,11 +54,14 @@ router.get('/stats', authMiddleware, async (req: AuthenticatedRequest, res: Resp
       where: { isActive: true },
     });
 
-    // 4. Unassigned works count (status != completed and no active assignments)
-    // To do this, we can query works that have no active assignments.
+    // 4. Unassigned works due TODAY (status != completed and no active assignments)
     const unassignedWorks = await prisma.work.findMany({
       where: {
         status: { not: 'completed' },
+        dueDate: {
+          gte: startOfToday,
+          lte: endOfToday,
+        },
         assignments: {
           none: {
             unassignedAt: null,
@@ -67,34 +70,37 @@ router.get('/stats', authMiddleware, async (req: AuthenticatedRequest, res: Resp
       },
     });
 
-    // 5. Worker workload (active assignment count per worker)
+    // 5. Worker workload – only count active assignments for works due TODAY
     const activeWorkersWithWorkload = await prisma.worker.findMany({
       where: { isActive: true },
       include: {
         assignments: {
-          where: { unassignedAt: null },
+          where: {
+            unassignedAt: null,
+            work: {
+              dueDate: {
+                gte: startOfToday,
+                lte: endOfToday,
+              },
+            },
+          },
         },
       },
     });
 
-    const workloadData = activeWorkersWithWorkload.map((w) => ({
-      id: w.id,
-      name: w.role, // role/skill tag helper placeholder
-      role: w.role,
-      avatarUrl: w.avatarUrl,
-      activeAssignmentsCount: w.assignments.length,
-    }));
+    // Build workload list: only workers who have at least one today-assignment
+    const todayWorkloadData = activeWorkersWithWorkload
+      .map((w) => ({
+        id: w.id,
+        name: w.name,
+        role: w.role,
+        avatarUrl: w.avatarUrl,
+        activeAssignmentsCount: w.assignments.length,
+      }))
+      .filter((w) => w.activeAssignmentsCount > 0)
+      .sort((a, b) => b.activeAssignmentsCount - a.activeAssignmentsCount);
 
-    // Actually map user fields correctly
-    const correctWorkloadData = activeWorkersWithWorkload.map((w) => ({
-      id: w.id,
-      name: w.name,
-      role: w.role,
-      avatarUrl: w.avatarUrl,
-      activeAssignmentsCount: w.assignments.length,
-    })).sort((a, b) => b.activeAssignmentsCount - a.activeAssignmentsCount);
-
-    const assignedWorkersCount = correctWorkloadData.filter(w => w.activeAssignmentsCount > 0).length;
+    const assignedWorkersCount = todayWorkloadData.length;
 
     res.json({
       totalWorks,
@@ -110,7 +116,7 @@ router.get('/stats', authMiddleware, async (req: AuthenticatedRequest, res: Resp
         priority: w.priority,
         status: w.status,
       })),
-      workload: correctWorkloadData,
+      workload: todayWorkloadData,
     });
   } catch (error) {
     console.error(error);
