@@ -104,6 +104,7 @@ out
 
 # Vite build outputs
 dist/
+backend/dist/
 
 # IDE / Editor configuration directories and files
 .vscode/
