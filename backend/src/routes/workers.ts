@@ -174,6 +174,7 @@ router.get('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Respon
       _id: undefined,
       activeAssignments,
       historicalAssignments,
+      assignments: mapped,
     });
   } catch (error) {
     console.error(error);

@@ -116,16 +116,23 @@ export default function WorkerList() {
       if (edit.workTitle) titles.add(edit.workTitle);
     });
     // Add initial work titles from historyData as well
-    if (historyData && historyData.assignments) {
-      historyData.assignments.forEach((a: any) => {
-        if (a.workTitle) titles.add(a.workTitle);
-      });
-    }
+    const assignmentSource = historyData?.assignments ?? [
+      ...(historyData?.activeAssignments ?? []),
+      ...(historyData?.historicalAssignments ?? []),
+    ];
+    assignmentSource.forEach((a: any) => {
+      if (a.workTitle) titles.add(a.workTitle);
+      if (a.work?.title) titles.add(a.work.title);
+    });
     return Array.from(titles).sort((a, b) => a.localeCompare(b));
   }, [works, editedAssignments, historyData]);
 
   const filteredAssignments = useMemo(() => {
-    if (!historyData || !historyData.assignments) return [];
+    const assignmentSource = historyData?.assignments ?? [
+      ...(historyData?.activeAssignments ?? []),
+      ...(historyData?.historicalAssignments ?? []),
+    ];
+    if (!historyData || assignmentSource.length === 0) return [];
     const now = new Date();
     let startLimit: Date | null = null;
     let endLimit: Date | null = null;
@@ -148,7 +155,7 @@ export default function WorkerList() {
     }
 
     // Filter assignments
-    const filtered = historyData.assignments.filter((assignment: any) => {
+    const filtered = assignmentSource.filter((assignment: any) => {
       if (assignment.unassignedAt !== null) return false;
       const assignedDate = new Date(assignment.assignedAt);
       if (startLimit && assignedDate < startLimit) return false;

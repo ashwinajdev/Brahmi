@@ -38,7 +38,22 @@ interface Work {
   dueDate: string;
   location: string | null;
   assignedWorkers: Worker[];
-  assignments?: any[];
+}
+
+interface AssignmentLog {
+  id: string;
+  workerId: string;
+  workerName: string;
+  workerAvatarUrl: string | null;
+  assignedAt: string;
+  unassignedAt: string | null;
+  amount: number;
+  shift: string;
+}
+
+interface WorkDetails extends Work {
+  activeWorkers: Worker[];
+  assignmentHistory: AssignmentLog[];
 }
 
 export default function WorkHistory() {
@@ -74,9 +89,16 @@ export default function WorkHistory() {
     queryKey: ['completedWorks', searchTerm],
     queryFn: () => {
       const params = new URLSearchParams();
+      params.append('status', 'completed');
       if (searchTerm) params.append('search', searchTerm);
       return api.get<Work[]>(`/works?${params.toString()}`);
     },
+  });
+
+  const { data: workDetails, isLoading: isLoadingDetails } = useQuery<WorkDetails>({
+    queryKey: ['work-details', selectedWorkId],
+    queryFn: () => api.get<WorkDetails>(`/works/${selectedWorkId}`),
+    enabled: !!selectedWorkId,
   });
 
   // Fetch all workers for custom select options in edit mode
@@ -106,48 +128,15 @@ export default function WorkHistory() {
     });
   }, [completedWorks]);
 
-  // Derive details of the selected task title client-side from the completedWorks list
-  const workDetails = useMemo(() => {
-    if (!selectedWorkId || !completedWorks) return null;
-    const selectedWork = completedWorks.find((w) => w.id === selectedWorkId);
-    if (!selectedWork) return null;
-
-    const matching = completedWorks.filter((w) => w.title === selectedWork.title);
-
-    const assignmentHistory: any[] = [];
-    for (const work of matching) {
-      const activeAssignments = work.assignments || [];
-      for (const a of activeAssignments) {
-        assignmentHistory.push({
-          id: a.id,
-          workId: a.workId,
-          workerId: a.workerId,
-          workerName: a.worker ? a.worker.name : 'Unknown',
-          workerAvatarUrl: a.worker ? a.worker.avatarUrl : null,
-          assignedAt: a.assignedAt,
-          unassignedAt: a.unassignedAt,
-          amount: a.amount,
-          shift: a.shift,
-        });
-      }
-    }
-
-    return {
-      id: selectedWork.id,
-      title: selectedWork.title,
-      description: selectedWork.description,
-      priority: selectedWork.priority,
-      category: selectedWork.category,
-      location: selectedWork.location,
-      assignmentHistory,
-    };
-  }, [selectedWorkId, completedWorks]);
-
-  const isLoadingDetails = false;
+  // Use the selected work's details from the API so assignment history is loaded correctly
+  const selectedWorkDetails = useMemo(() => {
+    if (!selectedWorkId || !workDetails) return null;
+    return workDetails;
+  }, [selectedWorkId, workDetails]);
 
   // Filtered History for sub-view
   const filteredHistory = useMemo(() => {
-    if (!workDetails || !workDetails.assignmentHistory) return [];
+    if (!selectedWorkDetails || !selectedWorkDetails.assignmentHistory) return [];
     const now = new Date();
     let startLimit: Date | null = null;
     let endLimit: Date | null = null;
@@ -174,7 +163,7 @@ export default function WorkHistory() {
       }
     }
 
-    return workDetails.assignmentHistory.filter((item: any) => {
+    return selectedWorkDetails.assignmentHistory.filter((item: any) => {
       if (item.unassignedAt !== null) return false;
       const dateObj = new Date(item.assignedAt);
       if (startLimit && dateObj < startLimit) return false;
