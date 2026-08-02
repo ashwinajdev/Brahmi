@@ -53,8 +53,10 @@ const workerSchema = new Schema<IWorker>(
   }
 );
 
-// Index for default sort by name
+// Indexes for efficient filtering and lookup
 workerSchema.index({ name: 1 });
+workerSchema.index({ email: 1 }, { unique: true });
+workerSchema.index({ role: 1 });
 
 const Worker: Model<IWorker> =
   mongoose.models.Worker || mongoose.model<IWorker>('Worker', workerSchema);

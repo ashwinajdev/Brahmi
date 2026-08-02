@@ -53,9 +53,12 @@ const workSchema = new Schema<IWork>(
   }
 );
 
-// Index for default sort by dueDate
+// Indexes for efficient filtering and sorting
 workSchema.index({ dueDate: 1 });
 workSchema.index({ status: 1 });
+workSchema.index({ category: 1 });
+workSchema.index({ priority: 1 });
+workSchema.index({ status: 1, dueDate: 1 });
 
 const Work: Model<IWork> =
   mongoose.models.Work || mongoose.model<IWork>('Work', workSchema);

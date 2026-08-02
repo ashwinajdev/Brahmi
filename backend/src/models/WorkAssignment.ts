@@ -52,6 +52,10 @@ workAssignmentSchema.index({ workId: 1 });
 workAssignmentSchema.index({ workerId: 1 });
 workAssignmentSchema.index({ workId: 1, unassignedAt: 1 });
 workAssignmentSchema.index({ workerId: 1, unassignedAt: 1 });
+workAssignmentSchema.index(
+  { workId: 1, workerId: 1, shift: 1 },
+  { unique: true, partialFilterExpression: { unassignedAt: null } }
+);
 
 const WorkAssignment: Model<IWorkAssignment> =
   mongoose.models.WorkAssignment ||

@@ -75,41 +75,57 @@ router.get('/stats', authMiddleware, async (req: AuthenticatedRequest, res: Resp
     }
 
     // 5. Worker workload – only count active assignments for works due TODAY
-    const todayAssignments = await WorkAssignment.find({ unassignedAt: null })
-      .populate({
-        path: 'workId',
-        match: { dueDate: { $gte: startOfToday, $lte: endOfToday } },
-      })
-      .populate('workerId', 'name role avatarUrl isActive')
-      .lean();
+    const todayAssignments = await WorkAssignment.aggregate([
+      { $match: { unassignedAt: null } },
+      {
+        $lookup: {
+          from: 'works',
+          localField: 'workId',
+          foreignField: '_id',
+          as: 'work',
+        },
+      },
+      { $unwind: '$work' },
+      {
+        $match: {
+          'work.dueDate': { $gte: startOfToday, $lte: endOfToday },
+        },
+      },
+      {
+        $lookup: {
+          from: 'workers',
+          localField: 'workerId',
+          foreignField: '_id',
+          as: 'worker',
+        },
+      },
+      { $unwind: '$worker' },
+      {
+        $match: { 'worker.isActive': true },
+      },
+      {
+        $group: {
+          _id: '$worker._id',
+          name: { $first: '$worker.name' },
+          role: { $first: '$worker.role' },
+          avatarUrl: { $first: '$worker.avatarUrl' },
+          activeAssignmentsCount: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          id: { $toString: '$_id' },
+          name: 1,
+          role: 1,
+          avatarUrl: 1,
+          activeAssignmentsCount: 1,
+        },
+      },
+      { $sort: { activeAssignmentsCount: -1 } },
+    ]);
 
-    // Build workload map: only workers with at least one valid today-assignment
-    const workloadByWorker: Record<string, { id: string; name: string; role: string; avatarUrl: string | null; activeAssignmentsCount: number }> = {};
-
-    for (const a of todayAssignments as any[]) {
-      // Skip assignments whose populated work didn't match the dueDate filter
-      if (!a.workId) continue;
-
-      const worker = a.workerId;
-      if (!worker || !worker.isActive) continue;
-
-      const wId = worker._id.toString();
-      if (!workloadByWorker[wId]) {
-        workloadByWorker[wId] = {
-          id: wId,
-          name: worker.name,
-          role: worker.role,
-          avatarUrl: worker.avatarUrl,
-          activeAssignmentsCount: 0,
-        };
-      }
-      workloadByWorker[wId].activeAssignmentsCount++;
-    }
-
-    const workload = Object.values(workloadByWorker).sort(
-      (a, b) => b.activeAssignmentsCount - a.activeAssignmentsCount
-    );
-
+    const workload = todayAssignments as any[];
     const assignedWorkersCount = workload.length;
 
     res.json({

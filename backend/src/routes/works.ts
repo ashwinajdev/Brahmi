@@ -1,4 +1,5 @@
 import { Router, Response } from 'express';
+import mongoose from 'mongoose';
 import { z } from 'zod';
 import Work from '../models/Work.js';
 import WorkAssignment from '../models/WorkAssignment.js';
@@ -50,7 +51,10 @@ router.get('/', authMiddleware, async (req: AuthenticatedRequest, res: Response)
     if (status) filter.status = String(status);
     if (category) filter.category = String(category);
 
-    const works = await Work.find(filter).sort({ dueDate: 1 }).lean();
+    const works = await Work.find(filter)
+      .select('title description category priority status dueDate location createdAt updatedAt')
+      .sort({ dueDate: 1 })
+      .lean();
 
     if (works.length === 0) {
       res.json([]);
@@ -114,14 +118,24 @@ router.get('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Respon
   try {
     const { id } = req.params;
 
-    const work = await Work.findById(id).lean();
+    if (!mongoose.isValidObjectId(id)) {
+      res.status(404).json({ error: 'Work item not found' });
+      return;
+    }
+
+    const work = await Work.findById(id)
+      .select('title description category priority status dueDate location createdAt updatedAt')
+      .lean();
     if (!work) {
       res.status(404).json({ error: 'Work item not found' });
       return;
     }
 
     const assignments = await WorkAssignment.find({ workId: id })
-      .populate('workerId', 'id name avatarUrl role phone alternatePhone email isActive')
+      .populate({
+        path: 'workerId',
+        select: 'name avatarUrl role phone alternatePhone email isActive',
+      })
       .sort({ assignedAt: -1 })
       .lean();
 

@@ -1,5 +1,6 @@
 import { Router, Response } from 'express';
 import { z } from 'zod';
+import mongoose from 'mongoose';
 import Worker from '../models/Worker.js';
 import WorkAssignment from '../models/WorkAssignment.js';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth.js';
@@ -59,7 +60,10 @@ router.get('/', authMiddleware, async (req: AuthenticatedRequest, res: Response)
       filter.isActive = false;
     }
 
-    const workers = await Worker.find(filter).sort({ name: 1 });
+    const workers = await Worker.find(filter)
+      .select('name phone alternatePhone email role avatarUrl isActive createdAt updatedAt')
+      .sort({ name: 1 })
+      .lean();
 
     if (workers.length === 0) {
       res.json([]);
@@ -73,7 +77,10 @@ router.get('/', authMiddleware, async (req: AuthenticatedRequest, res: Response)
       workerId: { $in: workerIds },
       unassignedAt: null,
     })
-      .populate('workId', 'id title status')
+      .populate({
+        path: 'workId',
+        select: 'title status dueDate',
+      })
       .lean();
 
     // Group assignments by workerId string
@@ -85,7 +92,7 @@ router.get('/', authMiddleware, async (req: AuthenticatedRequest, res: Response)
     }
 
     const formattedWorkers = workers.map((worker) => {
-      const obj = worker.toObject();
+      const obj = worker;
       const assignments = assignmentsByWorker[obj._id.toString()] || [];
       return {
         ...obj,
@@ -115,14 +122,22 @@ router.get('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Respon
   try {
     const { id } = req.params;
 
-    const worker = await Worker.findById(id);
+    if (!mongoose.isValidObjectId(id)) {
+      res.status(404).json({ error: 'Worker not found' });
+      return;
+    }
+
+    const worker = await Worker.findById(id).lean();
     if (!worker) {
       res.status(404).json({ error: 'Worker not found' });
       return;
     }
 
     const assignments = await WorkAssignment.find({ workerId: id })
-      .populate('workId')
+      .populate({
+        path: 'workId',
+        select: 'title description category priority status dueDate location createdAt updatedAt',
+      })
       .sort({ assignedAt: -1 })
       .lean();
 
@@ -153,10 +168,9 @@ router.get('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Respon
     const activeAssignments = mapped.filter((a) => a.unassignedAt === null);
     const historicalAssignments = mapped.filter((a) => a.unassignedAt !== null);
 
-    const obj = worker.toObject();
     res.json({
-      ...obj,
-      id: obj._id.toString(),
+      ...worker,
+      id: worker._id.toString(),
       _id: undefined,
       activeAssignments,
       historicalAssignments,

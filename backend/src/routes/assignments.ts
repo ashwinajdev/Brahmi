@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Router, Response } from 'express';
 import { z } from 'zod';
 import Work from '../models/Work.js';
@@ -9,20 +10,20 @@ const router = Router();
 
 // Use z.string().min(1) instead of z.string().uuid() since IDs are now MongoDB ObjectIds
 const assignmentSchema = z.object({
-  workId: z.string().min(1, 'Invalid Work ID'),
-  workerId: z.string().min(1, 'Invalid Worker ID'),
+  workId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Work ID'),
+  workerId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Worker ID'),
   shift: z.string().min(1).optional(),
   amount: z.number().nonnegative().optional(),
 });
 
 const syncAssignmentItemSchema = z.object({
-  workerId: z.string().min(1, 'Invalid Worker ID'),
+  workerId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Worker ID'),
   shift: z.string().min(1, 'Shift is required'),
   amount: z.number().nonnegative().optional(),
 });
 
 const batchSyncSchema = z.object({
-  workId: z.string().min(1, 'Invalid Work ID'),
+  workId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Work ID'),
   assignments: z.array(syncAssignmentItemSchema),
 });
 
@@ -40,13 +41,13 @@ router.post('/', authMiddleware, async (req: AuthenticatedRequest, res: Response
     const { workId, workerId, shift, amount } = assignmentSchema.parse(req.body);
     const resolvedShift = shift || 'Tiffin';
 
-    const work = await Work.findById(workId);
+    const work = await Work.findById(workId).lean();
     if (!work) {
       res.status(404).json({ error: 'Work item not found' });
       return;
     }
 
-    const worker = await Worker.findById(workerId);
+    const worker = await Worker.findById(workerId).lean();
     if (!worker) {
       res.status(404).json({ error: 'Worker not found' });
       return;
@@ -58,7 +59,7 @@ router.post('/', authMiddleware, async (req: AuthenticatedRequest, res: Response
       workerId,
       shift: resolvedShift,
       unassignedAt: null,
-    });
+    }).lean();
 
     if (active) {
       res.status(400).json({ error: 'Worker is already actively assigned to this shift' });
@@ -137,7 +138,7 @@ router.post('/sync', authMiddleware, async (req: AuthenticatedRequest, res: Resp
   try {
     const { workId, assignments } = batchSyncSchema.parse(req.body);
 
-    const work = await Work.findById(workId);
+    const work = await Work.findById(workId).lean();
     if (!work) {
       res.status(404).json({ error: 'Work item not found' });
       return;
