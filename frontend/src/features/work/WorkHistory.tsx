@@ -42,6 +42,7 @@ interface Work {
 
 interface AssignmentLog {
   id: string;
+  workId: string;
   workerId: string;
   workerName: string;
   workerAvatarUrl: string | null;
@@ -107,25 +108,8 @@ export default function WorkHistory() {
     queryFn: () => api.get<any[]>('/workers'),
   });
 
-  // Group completed works by title
-  const groupedCompletedWorks = useMemo(() => {
-    const groups: Record<string, Work[]> = {};
-    for (const work of completedWorks) {
-      if (!groups[work.title]) {
-        groups[work.title] = [];
-      }
-      groups[work.title].push(work);
-    }
-    
-    return Object.entries(groups).map(([_, works]) => {
-      // Find the representative work in the group based on dueDate or createdAt
-      const sorted = [...works].sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
-      return {
-        ...sorted[0], // Representative work
-        occurrencesCount: works.length, // Track how many times this work was completed
-        allOccurrences: works,
-      };
-    });
+  const sortedCompletedWorks = useMemo(() => {
+    return [...completedWorks].sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
   }, [completedWorks]);
 
   // Use the selected work's details from the API so assignment history is loaded correctly
@@ -761,7 +745,7 @@ export default function WorkHistory() {
 
 
   // Filtered Cards for main view
-  const filteredWorks = groupedCompletedWorks;
+const filteredWorks = sortedCompletedWorks;
 
   return (
     <div className="space-y-4">

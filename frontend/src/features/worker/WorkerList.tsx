@@ -156,7 +156,6 @@ export default function WorkerList() {
 
     // Filter assignments
     const filtered = assignmentSource.filter((assignment: any) => {
-      if (assignment.unassignedAt !== null) return false;
       const assignedDate = new Date(assignment.assignedAt);
       if (startLimit && assignedDate < startLimit) return false;
       if (endLimit && assignedDate > endLimit) return false;

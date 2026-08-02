@@ -157,6 +157,7 @@ router.get('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Respon
 
     const assignmentHistory = assignments.map((a: any) => ({
       id: a._id.toString(),
+      workId: a.workId?.toString() ?? a.workId,
       workerId: a.workerId?._id?.toString() ?? a.workerId?.toString(),
       workerName: a.workerId?.name,
       workerAvatarUrl: a.workerId?.avatarUrl,
