@@ -164,7 +164,6 @@ export default function WorkHistory() {
     }
 
     return selectedWorkDetails.assignmentHistory.filter((item: any) => {
-      if (item.unassignedAt !== null) return false;
       const dateObj = new Date(item.assignedAt);
       if (startLimit && dateObj < startLimit) return false;
       if (endLimit && dateObj > endLimit) return false;
