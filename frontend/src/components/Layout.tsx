@@ -205,40 +205,38 @@ export default function Layout({ children, activeTab }: LayoutProps) {
             <nav
               id="mobile-nav-menu"
               aria-label="Mobile navigation"
-              className={`absolute top-14 left-0 right-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 space-y-3 shadow-xl animate-fade-in`}
+              className="absolute top-14 left-0 right-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 space-y-3 shadow-xl animate-fade-in"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="grid grid-cols-2 gap-2">
-                {menuItems
-                  .filter((item) => item.id !== 'settings')
-                  .map((item) => {
-                    const Icon = item.icon;
-                    const isActive = activeTab === item.id;
-                    return (
-                      <a
-                        key={item.id}
-                        href={item.hash}
-                        aria-current={isActive ? 'page' : undefined}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex flex-col items-center justify-center p-4 rounded-xl text-xs font-semibold gap-2 border border-slate-100 dark:border-slate-800/60 transition-all ${
-                          isActive
-                            ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30'
-                            : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                        }`}
-                      >
-                        <Icon className="w-5 h-5" aria-hidden="true" />
-                        {item.label}
-                      </a>
-                    );
-                  })}
+              <div className="grid grid-cols-3 gap-2">
+                {menuItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
+                  return (
+                    <a
+                      key={item.id}
+                      href={item.hash}
+                      aria-current={isActive ? 'page' : undefined}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`flex flex-col items-center justify-center p-3 rounded-xl text-xs font-semibold gap-1.5 border border-slate-100 dark:border-slate-800/60 min-h-[44px] touch-active ${
+                        isActive
+                          ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30'
+                          : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" aria-hidden="true" />
+                      <span className="truncate">{item.id === 'history' ? 'History' : item.label}</span>
+                    </a>
+                  );
+                })}
               </div>
               <div className="flex justify-end items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/60">
                 <button
                   onClick={logout}
                   aria-label="Log out of Brahmi"
-                  className="flex items-center gap-2 py-2 px-4 rounded-lg text-xs font-semibold bg-red-500/10 text-red-500 cursor-pointer"
+                  className="flex items-center gap-2 py-2.5 px-4 rounded-xl text-xs font-semibold bg-red-500/10 text-red-500 cursor-pointer min-h-[44px] touch-active"
                 >
-                  <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
+                  <LogOut className="w-4 h-4" aria-hidden="true" />
                   Logout
                 </button>
               </div>
@@ -273,14 +271,21 @@ export default function Layout({ children, activeTab }: LayoutProps) {
                 <p className="text-xs font-bold">{user.name}</p>
                 <p className="text-[10px] text-slate-400">{user.email}</p>
               </div>
-              <div className="pt-2">
+              <div className="pt-2 space-y-1">
+                <a
+                  href="#settings"
+                  onClick={() => setIsProfileOpen(false)}
+                  className="w-full flex items-center justify-center gap-2 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer min-h-[44px] touch-active"
+                >
+                  <Settings className="w-4 h-4" aria-hidden="true" /> Settings
+                </a>
                 <button
                   onClick={() => {
                     logout();
                     setIsProfileOpen(false);
                   }}
                   aria-label="Log out of Brahmi"
-                  className="w-full flex items-center justify-center gap-2 py-2 text-xs font-semibold text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 py-2 text-xs font-semibold text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer min-h-[44px] touch-active"
                 >
                   <LogOut className="w-4 h-4" aria-hidden="true" /> Log Out
                 </button>
@@ -307,7 +312,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
               }}
               title="Refresh Page"
               aria-label="Refresh page data"
-              className="p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-colors cursor-pointer flex items-center justify-center border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm"
+              className="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-colors cursor-pointer flex items-center justify-center border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm"
             >
               <RotateCw id="desktop-refresh-btn" className="w-4 h-4" />
             </button>
@@ -320,38 +325,40 @@ export default function Layout({ children, activeTab }: LayoutProps) {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-grow p-3 md:p-8 overflow-y-auto overscroll-contain bg-slate-50 dark:bg-slate-950 select-none pb-20 md:pb-8" id="main-content" style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
+        <main className="flex-grow p-3 md:p-8 overflow-y-auto overscroll-contain bg-slate-50 dark:bg-slate-950 pb-24 md:pb-8" id="main-content" style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
           <div className="max-w-7xl mx-auto w-full">
             {children}
           </div>
         </main>
 
         {/* Mobile Bottom Navigation Bar (Full Width) */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-slate-200 shadow-lg h-16 flex items-center justify-around px-2 select-none" aria-label="Bottom navigation">
-          {menuItems
-            .filter((item) => item.id !== 'settings')
-            .map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <a
-                  key={item.id}
-                  href={item.hash}
-                  aria-label={item.label}
-                  aria-current={isActive ? 'page' : undefined}
-                  className={`flex flex-col items-center justify-center min-w-[64px] h-12 rounded-xl gap-0.5 transition-all duration-300 ${
-                    isActive
-                      ? 'bg-sky-500/10 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 scale-105 font-bold'
-                      : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-355'
-                  }`}
-                >
-                  <Icon className={`transition-transform duration-300 ${isActive ? 'w-5 h-5 scale-110' : 'w-5 h-5'}`} aria-hidden="true" />
-                  <span className={`text-[9px] tracking-tight font-extrabold transition-all duration-300 ${isActive ? 'opacity-100' : 'opacity-85'}`}>
-                    {item.id === 'history' ? 'History' : item.label.split(' ')[0]}
-                  </span>
-                </a>
-              );
-            })}
+        <nav
+          className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 shadow-lg flex items-center justify-around px-1 py-1"
+          style={{ paddingBottom: 'calc(0.25rem + env(safe-area-inset-bottom, 0px))' }}
+          aria-label="Bottom navigation"
+        >
+          {menuItems.filter((item) => item.id !== 'settings').map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <a
+                key={item.id}
+                href={item.hash}
+                aria-label={item.label}
+                aria-current={isActive ? 'page' : undefined}
+                className={`flex flex-col items-center justify-center min-w-[56px] h-12 rounded-xl gap-0.5 transition-all duration-200 touch-active ${
+                  isActive
+                    ? 'bg-sky-500/10 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 font-bold scale-105'
+                    : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                }`}
+              >
+                <Icon className={`transition-transform duration-200 ${isActive ? 'w-5 h-5 scale-110' : 'w-5 h-5'}`} aria-hidden="true" />
+                <span className={`text-[9px] tracking-tight font-extrabold transition-all duration-200 ${isActive ? 'opacity-100' : 'opacity-80'}`}>
+                  {item.id === 'history' ? 'History' : item.label.split(' ')[0]}
+                </span>
+              </a>
+            );
+          })}
         </nav>
       </div>
     </div>

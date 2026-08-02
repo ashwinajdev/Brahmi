@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { z } from 'zod';
-import prisma from '../db/prisma.js';
+import Worker from '../models/Worker.js';
+import WorkAssignment from '../models/WorkAssignment.js';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth.js';
 
 const router = Router();
@@ -8,70 +9,99 @@ const router = Router();
 const workerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   phone: z.string().regex(/^\d{10}$/, 'Phone number must be exactly 10 digits'),
-  alternatePhone: z.string().regex(/^\d{10}$/, 'Alternate phone must be exactly 10 digits').or(z.literal('')).optional().nullable(),
+  alternatePhone: z
+    .string()
+    .regex(/^\d{10}$/, 'Alternate phone must be exactly 10 digits')
+    .or(z.literal(''))
+    .optional()
+    .nullable(),
   email: z.string().email('Invalid email address'),
   role: z.string().min(1, 'Role/skill tag is required'),
   avatarUrl: z.string().or(z.literal('')).optional().nullable(),
   isActive: z.boolean().optional(),
 });
 
+// Helper: serialize a worker document with id string (matches API response shape)
+function serializeWorker(worker: any) {
+  const obj = worker.toObject ? worker.toObject() : { ...worker };
+  return {
+    ...obj,
+    id: obj._id.toString(),
+    _id: undefined,
+  };
+}
+
 // GET /api/workers - List all workers
 router.get('/', authMiddleware, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { search, role, status } = req.query;
 
-    const whereClause: any = {};
+    const filter: any = {};
 
-    // Filter by name/email/phone search
     if (search) {
-      whereClause.OR = [
-        { name: { contains: String(search) } },
-        { email: { contains: String(search) } },
-        { role: { contains: String(search) } },
-        { phone: { contains: String(search) } },
-        { alternatePhone: { contains: String(search) } },
+      const regex = new RegExp(String(search), 'i');
+      filter.$or = [
+        { name: regex },
+        { email: regex },
+        { role: regex },
+        { phone: regex },
+        { alternatePhone: regex },
       ];
     }
 
-    // Filter by exact role if provided
     if (role) {
-      whereClause.role = String(role);
+      filter.role = String(role);
     }
 
-    // Filter by status (active/inactive)
     if (status === 'active') {
-      whereClause.isActive = true;
+      filter.isActive = true;
     } else if (status === 'inactive') {
-      whereClause.isActive = false;
+      filter.isActive = false;
     }
 
-    const workers = await prisma.worker.findMany({
-      where: whereClause,
-      include: {
-        assignments: {
-          where: { unassignedAt: null },
-          select: {
-            id: true,
-            workId: true,
-            work: {
-              select: {
-                id: true,
-                title: true,
-                status: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: { name: 'asc' },
-    });
+    const workers = await Worker.find(filter).sort({ name: 1 });
 
-    // Format workers to include count and details of active works
-    const formattedWorkers = workers.map((worker) => ({
-      ...worker,
-      activeAssignmentsCount: worker.assignments.length,
-      activeWorks: worker.assignments.map((a) => a.work),
-    }));
+    if (workers.length === 0) {
+      res.json([]);
+      return;
+    }
+
+    const workerIds = workers.map((w) => w._id);
+
+    // Fetch all active assignments for these workers in one query
+    const activeAssignments = await WorkAssignment.find({
+      workerId: { $in: workerIds },
+      unassignedAt: null,
+    })
+      .populate('workId', 'id title status')
+      .lean();
+
+    // Group assignments by workerId string
+    const assignmentsByWorker: Record<string, any[]> = {};
+    for (const a of activeAssignments) {
+      const wId = a.workerId.toString();
+      if (!assignmentsByWorker[wId]) assignmentsByWorker[wId] = [];
+      assignmentsByWorker[wId].push(a);
+    }
+
+    const formattedWorkers = workers.map((worker) => {
+      const obj = worker.toObject();
+      const assignments = assignmentsByWorker[obj._id.toString()] || [];
+      return {
+        ...obj,
+        id: obj._id.toString(),
+        _id: undefined,
+        activeAssignmentsCount: assignments.length,
+        activeWorks: assignments.map((a: any) => {
+          const work = a.workId;
+          return {
+            id: work?._id?.toString() ?? work?.toString(),
+            title: work?.title,
+            status: work?.status,
+          };
+        }),
+      };
+    });
 
     res.json(formattedWorkers);
   } catch (error) {
@@ -80,33 +110,54 @@ router.get('/', authMiddleware, async (req: AuthenticatedRequest, res: Response)
   }
 });
 
-// GET /api/workers/:id - Single worker details with assignment history
+// GET /api/workers/:id - Single worker with assignment history
 router.get('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const id = req.params.id as string;
+    const { id } = req.params;
 
-    const worker = await prisma.worker.findUnique({
-      where: { id },
-      include: {
-        assignments: {
-          include: {
-            work: true,
-          },
-          orderBy: { assignedAt: 'desc' },
-        },
-      },
-    });
-
+    const worker = await Worker.findById(id);
     if (!worker) {
       res.status(404).json({ error: 'Worker not found' });
       return;
     }
 
-    const activeAssignments = worker.assignments.filter((a) => a.unassignedAt === null);
-    const historicalAssignments = worker.assignments.filter((a) => a.unassignedAt !== null);
+    const assignments = await WorkAssignment.find({ workerId: id })
+      .populate('workId')
+      .sort({ assignedAt: -1 })
+      .lean();
 
+    const mapped = assignments.map((a: any) => ({
+      id: a._id.toString(),
+      workId: a.workId?._id?.toString() ?? a.workId?.toString(),
+      workerId: a.workerId.toString(),
+      assignedAt: a.assignedAt,
+      unassignedAt: a.unassignedAt,
+      amount: a.amount,
+      shift: a.shift,
+      work: a.workId
+        ? {
+            id: a.workId._id?.toString(),
+            title: a.workId.title,
+            description: a.workId.description,
+            category: a.workId.category,
+            priority: a.workId.priority,
+            status: a.workId.status,
+            dueDate: a.workId.dueDate,
+            location: a.workId.location,
+            createdAt: a.workId.createdAt,
+            updatedAt: a.workId.updatedAt,
+          }
+        : null,
+    }));
+
+    const activeAssignments = mapped.filter((a) => a.unassignedAt === null);
+    const historicalAssignments = mapped.filter((a) => a.unassignedAt !== null);
+
+    const obj = worker.toObject();
     res.json({
-      ...worker,
+      ...obj,
+      id: obj._id.toString(),
+      _id: undefined,
       activeAssignments,
       historicalAssignments,
     });
@@ -121,19 +172,19 @@ router.post('/', authMiddleware, async (req: AuthenticatedRequest, res: Response
   try {
     const data = workerSchema.parse(req.body);
 
-    const newWorker = await prisma.worker.create({
-      data: {
-        name: data.name,
-        phone: data.phone,
-        alternatePhone: data.alternatePhone || null,
-        email: data.email,
-        role: data.role,
-        avatarUrl: data.avatarUrl || null,
-        isActive: data.isActive !== undefined ? data.isActive : true,
-      },
+    const worker = new Worker({
+      name: data.name,
+      phone: data.phone,
+      alternatePhone: data.alternatePhone || null,
+      email: data.email,
+      role: data.role,
+      avatarUrl: data.avatarUrl || null,
+      isActive: data.isActive !== undefined ? data.isActive : true,
     });
+    await worker.save();
 
-    res.status(201).json(newWorker);
+    const obj = worker.toObject();
+    res.status(201).json({ ...obj, id: obj._id.toString(), _id: undefined });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: error.errors });
@@ -144,27 +195,24 @@ router.post('/', authMiddleware, async (req: AuthenticatedRequest, res: Response
   }
 });
 
-// PUT /api/workers/:id - Update worker details
+// PUT /api/workers/:id - Update worker
 router.put('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const id = req.params.id as string;
+    const { id } = req.params;
     const data = workerSchema.partial().parse(req.body);
 
-    const existing = await prisma.worker.findUnique({ where: { id } });
+    const existing = await Worker.findById(id);
     if (!existing) {
       res.status(404).json({ error: 'Worker not found' });
       return;
     }
 
-    const updatedWorker = await prisma.worker.update({
-      where: { id },
-      data: {
-        ...data,
-        avatarUrl: data.avatarUrl === '' ? null : data.avatarUrl,
-      },
-    });
+    const updateData: any = { ...data };
+    if (updateData.avatarUrl === '') updateData.avatarUrl = null;
 
-    res.json(updatedWorker);
+    const updated = await Worker.findByIdAndUpdate(id, updateData, { new: true });
+    const obj = updated!.toObject();
+    res.json({ ...obj, id: obj._id.toString(), _id: undefined });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: error.errors });
@@ -175,23 +223,27 @@ router.put('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Respon
   }
 });
 
-// DELETE /api/workers/:id - Soft-delete/deactivate worker
+// DELETE /api/workers/:id - Hard delete worker + cascade delete assignments
 router.delete('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const id = req.params.id as string;
+    const { id } = req.params;
 
-    const existing = await prisma.worker.findUnique({ where: { id } });
+    const existing = await Worker.findById(id);
     if (!existing) {
       res.status(404).json({ error: 'Worker not found' });
       return;
     }
 
-    // Hard delete worker and cascade delete assignments
-    const deletedWorker = await prisma.worker.delete({
-      where: { id },
-    });
+    // Cascade: delete all assignments for this worker first
+    await WorkAssignment.deleteMany({ workerId: id });
 
-    res.json({ message: 'Worker deleted successfully', worker: deletedWorker });
+    await Worker.findByIdAndDelete(id);
+
+    const obj = existing.toObject();
+    res.json({
+      message: 'Worker deleted successfully',
+      worker: { ...obj, id: obj._id.toString(), _id: undefined },
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to deactivate worker' });

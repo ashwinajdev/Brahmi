@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { z } from 'zod';
-import prisma from '../db/prisma.js';
+import Work from '../models/Work.js';
+import WorkAssignment from '../models/WorkAssignment.js';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth.js';
 import { autoUpdatePastWorks } from '../utils/workHelper.js';
 
@@ -16,66 +17,90 @@ const workSchema = z.object({
   location: z.string().or(z.literal('')).optional(),
 });
 
+// Helper to serialize a Work document with its assignedWorkers
+function serializeWork(work: any, assignedWorkers: any[] = []) {
+  const obj = work.toObject ? work.toObject() : { ...work };
+  return {
+    ...obj,
+    id: obj._id.toString(),
+    _id: undefined,
+    assignedWorkers,
+  };
+}
+
 // GET /api/works - List all work tasks
 router.get('/', authMiddleware, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    // Rollover past active tasks to today
     await autoUpdatePastWorks();
 
     const { search, priority, status, category } = req.query;
 
-    const whereClause: any = {};
+    const filter: any = {};
 
     if (search) {
-      whereClause.OR = [
-        { title: { contains: String(search) } },
-        { description: { contains: String(search) } },
-        { location: { contains: String(search) } },
+      const regex = new RegExp(String(search), 'i');
+      filter.$or = [
+        { title: regex },
+        { description: regex },
+        { location: regex },
       ];
     }
 
-    if (priority) {
-      whereClause.priority = String(priority);
+    if (priority) filter.priority = String(priority);
+    if (status) filter.status = String(status);
+    if (category) filter.category = String(category);
+
+    const works = await Work.find(filter).sort({ dueDate: 1 }).lean();
+
+    if (works.length === 0) {
+      res.json([]);
+      return;
     }
 
-    if (status) {
-      whereClause.status = String(status);
+    const workIds = works.map((w) => w._id);
+
+    // Fetch all active assignments for these works in one query
+    const activeAssignments = await WorkAssignment.find({
+      workId: { $in: workIds },
+      unassignedAt: null,
+    })
+      .populate('workerId', 'id name avatarUrl role isActive')
+      .lean();
+
+    // Group assignments by workId string
+    const assignmentsByWork: Record<string, any[]> = {};
+    for (const a of activeAssignments) {
+      const wId = a.workId.toString();
+      if (!assignmentsByWork[wId]) assignmentsByWork[wId] = [];
+      assignmentsByWork[wId].push(a);
     }
 
-    if (category) {
-      whereClause.category = String(category);
-    }
+    const formattedWorks = works.map((work) => {
+      const assignments = assignmentsByWork[work._id.toString()] || [];
 
-    const works = await prisma.work.findMany({
-      where: whereClause,
-      include: {
-        assignments: {
-          where: { unassignedAt: null },
-          include: {
-            worker: {
-              select: {
-                id: true,
-                name: true,
-                avatarUrl: true,
-                role: true,
-                isActive: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: { dueDate: 'asc' },
+      // Deduplicate by worker id (a worker assigned to multiple shifts appears once)
+      const workerMap = new Map<string, any>();
+      for (const a of assignments) {
+        const worker = a.workerId as any;
+        const wId = worker?._id?.toString();
+        if (wId && !workerMap.has(wId)) {
+          workerMap.set(wId, {
+            id: wId,
+            name: worker.name,
+            avatarUrl: worker.avatarUrl,
+            role: worker.role,
+            isActive: worker.isActive,
+          });
+        }
+      }
+
+      return {
+        ...work,
+        id: work._id.toString(),
+        _id: undefined,
+        assignedWorkers: Array.from(workerMap.values()),
+      };
     });
-
-    // Format works to return structured assigned workers
-    const formattedWorks = works.map((work) => ({
-      ...work,
-      // Deduplicate by worker id — a worker assigned to multiple shifts
-      // (e.g. Tiffin + Dinner) should only appear once in the list
-      assignedWorkers: Array.from(
-        new Map(work.assignments.map((a) => [a.worker.id, a.worker])).values()
-      ),
-    }));
 
     res.json(formattedWorks);
   } catch (error) {
@@ -84,43 +109,43 @@ router.get('/', authMiddleware, async (req: AuthenticatedRequest, res: Response)
   }
 });
 
-// GET /api/works/:id - Single work details
+// GET /api/works/:id - Single work details with full assignment history
 router.get('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const id = req.params.id as string;
+    const { id } = req.params;
 
-    const work = await prisma.work.findUnique({
-      where: { id },
-      include: {
-        assignments: {
-          include: {
-            worker: true,
-          },
-          orderBy: { assignedAt: 'desc' },
-        },
-      },
-    });
-
+    const work = await Work.findById(id).lean();
     if (!work) {
       res.status(404).json({ error: 'Work item not found' });
       return;
     }
 
-    const activeWorkers = work.assignments
+    const assignments = await WorkAssignment.find({ workId: id })
+      .populate('workerId', 'id name avatarUrl role phone alternatePhone email isActive')
+      .sort({ assignedAt: -1 })
+      .lean();
+
+    const activeWorkers = assignments
       .filter((a) => a.unassignedAt === null)
-      .map((a) => ({
-        ...a.worker,
-        assignmentId: a.id,
+      .map((a: any) => ({
+        id: a.workerId?._id?.toString(),
+        name: a.workerId?.name,
+        avatarUrl: a.workerId?.avatarUrl,
+        role: a.workerId?.role,
+        phone: a.workerId?.phone,
+        alternatePhone: a.workerId?.alternatePhone,
+        email: a.workerId?.email,
+        isActive: a.workerId?.isActive,
+        assignmentId: a._id.toString(),
         shift: a.shift,
         amount: a.amount,
       }));
 
-    // Full assignment timeline history
-    const assignmentHistory = work.assignments.map((a) => ({
-      id: a.id,
-      workerId: a.workerId,
-      workerName: a.worker.name,
-      workerAvatarUrl: a.worker.avatarUrl,
+    const assignmentHistory = assignments.map((a: any) => ({
+      id: a._id.toString(),
+      workerId: a.workerId?._id?.toString() ?? a.workerId?.toString(),
+      workerName: a.workerId?.name,
+      workerAvatarUrl: a.workerId?.avatarUrl,
       assignedAt: a.assignedAt,
       unassignedAt: a.unassignedAt,
       amount: a.amount,
@@ -129,6 +154,8 @@ router.get('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Respon
 
     res.json({
       ...work,
+      id: work._id.toString(),
+      _id: undefined,
       activeWorkers,
       assignmentHistory,
     });
@@ -143,19 +170,19 @@ router.post('/', authMiddleware, async (req: AuthenticatedRequest, res: Response
   try {
     const data = workSchema.parse(req.body);
 
-    const newWork = await prisma.work.create({
-      data: {
-        title: data.title,
-        description: data.description,
-        category: data.category,
-        priority: data.priority,
-        status: data.status,
-        dueDate: data.dueDate,
-        location: data.location || null,
-      },
+    const newWork = new Work({
+      title: data.title,
+      description: data.description,
+      category: data.category,
+      priority: data.priority,
+      status: data.status,
+      dueDate: data.dueDate,
+      location: data.location || null,
     });
+    await newWork.save();
 
-    res.status(201).json(newWork);
+    const obj = newWork.toObject();
+    res.status(201).json({ ...obj, id: obj._id.toString(), _id: undefined });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: error.errors });
@@ -166,27 +193,24 @@ router.post('/', authMiddleware, async (req: AuthenticatedRequest, res: Response
   }
 });
 
-// PUT /api/works/:id - Update work item details
+// PUT /api/works/:id - Update work item
 router.put('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const id = req.params.id as string;
+    const { id } = req.params;
     const data = workSchema.partial().parse(req.body);
 
-    const existing = await prisma.work.findUnique({ where: { id } });
+    const existing = await Work.findById(id);
     if (!existing) {
       res.status(404).json({ error: 'Work item not found' });
       return;
     }
 
-    const updatedWork = await prisma.work.update({
-      where: { id },
-      data: {
-        ...data,
-        location: data.location === '' ? null : data.location,
-      },
-    });
+    const updateData: any = { ...data };
+    if (updateData.location === '') updateData.location = null;
 
-    res.json(updatedWork);
+    const updated = await Work.findByIdAndUpdate(id, updateData, { new: true });
+    const obj = updated!.toObject();
+    res.json({ ...obj, id: obj._id.toString(), _id: undefined });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: error.errors });
@@ -197,18 +221,21 @@ router.put('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Respon
   }
 });
 
-// DELETE /api/works/:id - Delete work item
+// DELETE /api/works/:id - Delete work item + cascade assignments
 router.delete('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const id = req.params.id as string;
+    const { id } = req.params;
 
-    const existing = await prisma.work.findUnique({ where: { id } });
+    const existing = await Work.findById(id);
     if (!existing) {
       res.status(404).json({ error: 'Work item not found' });
       return;
     }
 
-    await prisma.work.delete({ where: { id } });
+    // Cascade: delete all assignments for this work first
+    await WorkAssignment.deleteMany({ workId: id });
+
+    await Work.findByIdAndDelete(id);
 
     res.json({ message: 'Work item deleted successfully' });
   } catch (error) {

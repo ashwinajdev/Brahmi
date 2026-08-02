@@ -832,7 +832,7 @@ export default function WorkHistory() {
             <div 
               key={work.id} 
               onClick={() => setSelectedWorkId(work.id)}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 hover:border-sky-500 dark:hover:border-sky-400 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-3.5 group"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 hover:border-sky-500 dark:hover:border-sky-400 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-3.5 group touch-active"
             >
               <div className="space-y-2.5">
                 {(work as any).occurrencesCount > 1 && (

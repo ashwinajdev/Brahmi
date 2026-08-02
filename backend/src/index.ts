@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { connectDB } from './db/mongoose.js';
 import authRoutes from './routes/auth.js';
 import workerRoutes from './routes/workers.js';
 import workRoutes from './routes/works.js';
@@ -47,10 +48,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
-// Start Server
-app.listen(PORT, () => {
-  console.log(`Brahmi API Server is running on port ${PORT}`);
-
+function startKeepAlive() {
   // ── Keep-Alive: prevent Render free-tier spin-down ──────────────────────
   // Only activates when RENDER_BACKEND_URL is set (i.e. in production).
   // Pings /health every 10 minutes so the dyno never goes idle.
@@ -96,4 +94,35 @@ app.listen(PORT, () => {
     }, INTERVAL_MS);
   }
   // ────────────────────────────────────────────────────────────────────────
-});
+}
+
+// Connect to MongoDB, then start server
+connectDB()
+  .then(() => {
+    const server = app.listen(PORT, () => {
+      console.log(`Brahmi API Server is running on port ${PORT}`);
+      startKeepAlive();
+    });
+
+    server.on('error', (err: any) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error('');
+        console.error('❌ ERROR: Port', PORT, 'is already in use.');
+        console.error('');
+        console.error('   Another backend instance (or another process) is already listening on :' + PORT + '.');
+        console.error('');
+        console.error('   → To fix on Windows, run:');
+        console.error('     netstat -ano | findstr :' + PORT);
+        console.error('     taskkill /PID <process-id> /F');
+        console.error('');
+        console.error('   → Or just close the other terminal running the backend.');
+        process.exit(1);
+      }
+      console.error('Server error:', err);
+      process.exit(1);
+    });
+  })
+  .catch((err) => {
+    console.error('Failed to connect to MongoDB', err);
+    process.exit(1);
+  });

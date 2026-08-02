@@ -87,6 +87,12 @@ export default function WorkerList() {
     },
   });
 
+  const sortedWorkers = useMemo(() => {
+    return [...workers].sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true })
+    );
+  }, [workers]);
+
   // Query: Get Single Worker details with history
   const { data: historyData, isLoading: isLoadingHistory } = useQuery({
     queryKey: ['worker-history', historyWorkerId],
@@ -973,14 +979,12 @@ export default function WorkerList() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...workers]
-            .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true }))
-            .map((worker) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {sortedWorkers.map((worker) => (
             <div
               key={worker.id}
               onClick={() => setHistoryWorkerId(worker.id)}
-              className={`cursor-pointer bg-white dark:bg-slate-900 border rounded-xl shadow-sm hover:shadow-md hover:border-sky-500/25 dark:hover:border-sky-500/15 p-3.5 relative overflow-hidden transition-all flex flex-col justify-between ${
+              className={`cursor-pointer bg-white dark:bg-slate-900 border rounded-xl shadow-sm hover:shadow-md hover:border-sky-500/25 dark:hover:border-sky-500/15 p-3.5 relative overflow-hidden transition-all flex flex-col justify-between touch-active ${
                 worker.isActive
                   ? 'border-slate-200 dark:border-slate-800'
                   : 'border-slate-200 dark:border-slate-800 opacity-60 bg-slate-50/50 dark:bg-slate-900/40'
@@ -988,7 +992,7 @@ export default function WorkerList() {
             >
               <div>
                 {/* Header: Photo, Name, Contact Numbers, and Quick Actions */}
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 min-w-0 flex-grow">
                     <img
                       src={worker.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(worker.name)}`}
@@ -1009,20 +1013,20 @@ export default function WorkerList() {
                     </div>
                   </div>
 
-                  {/* Quick Dial and Message Icons */}
-                  <div className="flex items-center gap-2 shrink-0 self-center" onClick={(e) => e.stopPropagation()}>
+                  {/* Quick Dial and Message Icons (44px touch-friendly hit areas) */}
+                  <div className="flex items-center gap-1.5 shrink-0 self-center" onClick={(e) => e.stopPropagation()}>
                     <a
                       href={`tel:${worker.phone}`}
-                      className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 shadow-sm"
+                      className="w-9 h-9 flex items-center justify-center text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 shadow-sm touch-active"
                       title="Call Worker"
                     >
-                      <Phone className="w-3.5 h-3.5" />
+                      <Phone className="w-4 h-4" />
                     </a>
                     <a
                       href={formatWhatsAppLink(worker.phone)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-8 h-8 flex items-center justify-center rounded-xl transition-all hover:scale-105 active:scale-95 shadow-sm overflow-hidden"
+                      className="w-9 h-9 flex items-center justify-center rounded-xl transition-all hover:scale-105 active:scale-95 shadow-sm overflow-hidden touch-active"
                       title="WhatsApp Message"
                     >
                       <WhatsAppIcon className="w-full h-full" />
@@ -1038,7 +1042,7 @@ export default function WorkerList() {
                   onClick={() => handleToggleActive(worker)}
                   aria-label={`${worker.isActive ? 'Deactivate' : 'Activate'} ${worker.name}`}
                   aria-pressed={worker.isActive}
-                  className="flex items-center gap-1 text-[10px] font-bold text-slate-500 dark:text-slate-400 cursor-pointer"
+                  className="flex items-center gap-1.5 py-1 px-2 rounded-lg text-xs font-bold text-slate-500 dark:text-slate-400 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/40 min-h-[36px] touch-active"
                 >
                   {worker.isActive ? (
                     <>
@@ -1056,10 +1060,10 @@ export default function WorkerList() {
                   <button
                     onClick={() => openEditModal(worker)}
                     aria-label={`Edit details for ${worker.name}`}
-                    className="p-1.5 text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                    className="p-2 text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center touch-active"
                     title="Edit Worker Info"
                   >
-                    <Edit2 className="w-3.5 h-3.5" aria-hidden="true" />
+                    <Edit2 className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </div>
               </div>

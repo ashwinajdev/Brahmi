@@ -2,7 +2,7 @@ import { Router, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import prisma from '../db/prisma.js';
+import User from '../models/User.js';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth.js';
 
 const router = Router();
@@ -29,9 +29,7 @@ router.post('/register', async (req, res): Promise<void> => {
   try {
     const body = registerSchema.parse(req.body);
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email: body.email },
-    });
+    const existingUser = await User.findOne({ email: body.email.toLowerCase() });
 
     if (existingUser) {
       res.status(400).json({ error: 'User with this email already exists' });
@@ -39,17 +37,16 @@ router.post('/register', async (req, res): Promise<void> => {
     }
 
     const hashedPassword = await bcrypt.hash(body.password, 10);
-    const user = await prisma.user.create({
-      data: {
-        email: body.email,
-        password: hashedPassword,
-        name: body.name,
-        avatarUrl: body.avatarUrl || null,
-      },
+    const user = new User({
+      email: body.email,
+      password: hashedPassword,
+      name: body.name,
+      avatarUrl: body.avatarUrl || null,
     });
+    await user.save();
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, name: user.name },
+      { id: user._id.toString(), email: user.email, name: user.name },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -57,7 +54,7 @@ router.post('/register', async (req, res): Promise<void> => {
     res.status(201).json({
       token,
       user: {
-        id: user.id,
+        id: user._id.toString(),
         email: user.email,
         name: user.name,
         avatarUrl: user.avatarUrl,
@@ -78,9 +75,7 @@ router.post('/login', async (req, res): Promise<void> => {
   try {
     const body = loginSchema.parse(req.body);
 
-    const user = await prisma.user.findUnique({
-      where: { email: body.email },
-    });
+    const user = await User.findOne({ email: body.email.toLowerCase() });
 
     if (!user) {
       res.status(400).json({ error: 'Invalid email or password' });
@@ -94,7 +89,7 @@ router.post('/login', async (req, res): Promise<void> => {
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, name: user.name },
+      { id: user._id.toString(), email: user.email, name: user.name },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -102,7 +97,7 @@ router.post('/login', async (req, res): Promise<void> => {
     res.json({
       token,
       user: {
-        id: user.id,
+        id: user._id.toString(),
         email: user.email,
         name: user.name,
         avatarUrl: user.avatarUrl,
@@ -115,8 +110,6 @@ router.post('/login', async (req, res): Promise<void> => {
     }
     console.error('[LOGIN ERROR]', {
       message: (error as any)?.message,
-      code: (error as any)?.code,
-      meta: (error as any)?.meta,
       stack: (error as any)?.stack?.split('\n').slice(0, 5).join('\n'),
     });
     res.status(500).json({ error: 'Server error during login' });
@@ -131,9 +124,7 @@ router.get('/me', authMiddleware, async (req: AuthenticatedRequest, res: Respons
       return;
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-    });
+    const user = await User.findById(req.user.id);
 
     if (!user) {
       res.status(404).json({ error: 'User not found' });
@@ -142,7 +133,7 @@ router.get('/me', authMiddleware, async (req: AuthenticatedRequest, res: Respons
 
     res.json({
       user: {
-        id: user.id,
+        id: user._id.toString(),
         email: user.email,
         name: user.name,
         avatarUrl: user.avatarUrl,

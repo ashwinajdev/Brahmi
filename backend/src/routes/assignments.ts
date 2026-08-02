@@ -1,26 +1,37 @@
 import { Router, Response } from 'express';
 import { z } from 'zod';
-import prisma from '../db/prisma.js';
+import Work from '../models/Work.js';
+import Worker from '../models/Worker.js';
+import WorkAssignment from '../models/WorkAssignment.js';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth.js';
 
 const router = Router();
 
+// Use z.string().min(1) instead of z.string().uuid() since IDs are now MongoDB ObjectIds
 const assignmentSchema = z.object({
-  workId: z.string().uuid('Invalid Work ID'),
-  workerId: z.string().uuid('Invalid Worker ID'),
+  workId: z.string().min(1, 'Invalid Work ID'),
+  workerId: z.string().min(1, 'Invalid Worker ID'),
   shift: z.string().min(1).optional(),
   amount: z.number().nonnegative().optional(),
 });
 
 const syncAssignmentItemSchema = z.object({
-  workerId: z.string().uuid('Invalid Worker ID'),
+  workerId: z.string().min(1, 'Invalid Worker ID'),
   shift: z.string().min(1, 'Shift is required'),
   amount: z.number().nonnegative().optional(),
 });
 
 const batchSyncSchema = z.object({
-  workId: z.string().uuid('Invalid Work ID'),
+  workId: z.string().min(1, 'Invalid Work ID'),
   assignments: z.array(syncAssignmentItemSchema),
+});
+
+const updateAssignmentSchema = z.object({
+  assignedAt: z.string().transform((str) => new Date(str)).optional(),
+  unassignedAt: z.string().transform((str) => new Date(str)).nullable().optional(),
+  amount: z.number().nullable().optional(),
+  workTitle: z.string().min(1).optional(),
+  shift: z.string().min(1).optional(),
 });
 
 // POST /api/assignments - Assign worker to work
@@ -29,22 +40,24 @@ router.post('/', authMiddleware, async (req: AuthenticatedRequest, res: Response
     const { workId, workerId, shift, amount } = assignmentSchema.parse(req.body);
     const resolvedShift = shift || 'Tiffin';
 
-    // Verify work and worker exist
-    const work = await prisma.work.findUnique({ where: { id: workId } });
+    const work = await Work.findById(workId);
     if (!work) {
       res.status(404).json({ error: 'Work item not found' });
       return;
     }
 
-    const worker = await prisma.worker.findUnique({ where: { id: workerId } });
+    const worker = await Worker.findById(workerId);
     if (!worker) {
       res.status(404).json({ error: 'Worker not found' });
       return;
     }
 
-    // Check if there is already an active assignment
-    const active = await prisma.workAssignment.findFirst({
-      where: { workId, workerId, shift: resolvedShift, unassignedAt: null },
+    // Check for existing active assignment on this shift
+    const active = await WorkAssignment.findOne({
+      workId,
+      workerId,
+      shift: resolvedShift,
+      unassignedAt: null,
     });
 
     if (active) {
@@ -52,22 +65,33 @@ router.post('/', authMiddleware, async (req: AuthenticatedRequest, res: Response
       return;
     }
 
-    // Create a new active assignment
-    const newAssignment = await prisma.workAssignment.create({
-      data: {
-        workId,
-        workerId,
-        assignedAt: new Date(),
-        unassignedAt: null,
-        shift: resolvedShift,
-        amount: amount !== undefined ? amount : 500.0,
-      },
-      include: {
-        worker: true,
-      },
+    const newAssignment = new WorkAssignment({
+      workId,
+      workerId,
+      assignedAt: new Date(),
+      unassignedAt: null,
+      shift: resolvedShift,
+      amount: amount !== undefined ? amount : 500.0,
     });
+    await newAssignment.save();
 
-    res.status(201).json(newAssignment);
+    const populated = await WorkAssignment.findById(newAssignment._id)
+      .populate('workerId')
+      .lean();
+
+    const workerObj = (populated as any)?.workerId as any;
+    res.status(201).json({
+      id: populated?._id?.toString(),
+      workId: populated?.workId?.toString(),
+      workerId: workerObj?._id?.toString(),
+      assignedAt: populated?.assignedAt,
+      unassignedAt: populated?.unassignedAt,
+      shift: populated?.shift,
+      amount: populated?.amount,
+      worker: workerObj
+        ? { ...workerObj, id: workerObj._id.toString(), _id: undefined }
+        : null,
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: error.errors });
@@ -78,30 +102,26 @@ router.post('/', authMiddleware, async (req: AuthenticatedRequest, res: Response
   }
 });
 
-// DELETE /api/assignments - Unassign worker from work (soft delete/archive assignment)
+// DELETE /api/assignments - Unassign worker from work (soft delete)
 router.delete('/', authMiddleware, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    // Read from body or query
     const { workId, workerId } = assignmentSchema.parse(req.body);
 
-    const active = await prisma.workAssignment.findFirst({
-      where: { workId, workerId, unassignedAt: null },
-    });
+    const active = await WorkAssignment.findOne({ workId, workerId, unassignedAt: null });
 
     if (!active) {
       res.status(404).json({ error: 'No active assignment found for this worker and work' });
       return;
     }
 
-    // Soft delete: update unassignedAt to now
-    const updated = await prisma.workAssignment.update({
-      where: { id: active.id },
-      data: {
-        unassignedAt: new Date(),
-      },
-    });
+    active.unassignedAt = new Date();
+    await active.save();
 
-    res.json({ message: 'Worker unassigned successfully', assignment: updated });
+    const obj = active.toObject();
+    res.json({
+      message: 'Worker unassigned successfully',
+      assignment: { ...obj, id: obj._id.toString(), _id: undefined },
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: error.errors });
@@ -117,37 +137,31 @@ router.post('/sync', authMiddleware, async (req: AuthenticatedRequest, res: Resp
   try {
     const { workId, assignments } = batchSyncSchema.parse(req.body);
 
-    // Verify work exists
-    const work = await prisma.work.findUnique({ where: { id: workId } });
+    const work = await Work.findById(workId);
     if (!work) {
       res.status(404).json({ error: 'Work item not found' });
       return;
     }
 
     // Get all current active assignments for this work
-    const activeAssignments = await prisma.workAssignment.findMany({
-      where: { workId, unassignedAt: null },
-    });
+    const activeAssignments = await WorkAssignment.find({ workId, unassignedAt: null }).lean();
 
     // Group active assignments by workerId
-    const activeByWorker: { [workerId: string]: typeof activeAssignments } = {};
+    const activeByWorker: Record<string, typeof activeAssignments> = {};
     for (const a of activeAssignments) {
-      if (!activeByWorker[a.workerId]) {
-        activeByWorker[a.workerId] = [];
-      }
-      activeByWorker[a.workerId].push(a);
+      const wId = a.workerId.toString();
+      if (!activeByWorker[wId]) activeByWorker[wId] = [];
+      activeByWorker[wId].push(a);
     }
 
     // Group new assignments by workerId
-    const newByWorker: { [workerId: string]: typeof assignments } = {};
+    const newByWorker: Record<string, typeof assignments> = {};
     for (const a of assignments) {
-      if (!newByWorker[a.workerId]) {
-        newByWorker[a.workerId] = [];
-      }
+      if (!newByWorker[a.workerId]) newByWorker[a.workerId] = [];
       newByWorker[a.workerId].push(a);
     }
 
-    const toRemove: typeof activeAssignments = [];
+    const toRemoveIds: string[] = [];
     const toAdd: typeof assignments = [];
     const now = new Date();
 
@@ -157,10 +171,10 @@ router.post('/sync', authMiddleware, async (req: AuthenticatedRequest, res: Resp
       const newList = newByWorker[workerId];
 
       if (!newList) {
-        // Worker was removed entirely: soft-delete all their active assignments
-        toRemove.push(...activeList);
+        // Worker was removed entirely
+        toRemoveIds.push(...activeList.map((a) => a._id.toString()));
       } else {
-        // Worker is in both: check if their assignment details (shifts/amounts) changed
+        // Check if assignment details changed
         let isEdited = activeList.length !== newList.length;
 
         if (!isEdited) {
@@ -180,64 +194,52 @@ router.post('/sync', authMiddleware, async (req: AuthenticatedRequest, res: Resp
         }
 
         if (isEdited) {
-          // If edited, we end all their current active assignments
-          toRemove.push(...activeList);
-          // And start new ones with the updated details
+          toRemoveIds.push(...activeList.map((a) => a._id.toString()));
           toAdd.push(...newList);
         }
       }
     }
 
-    // 2. Check for workers that are newly assigned (present only in newList)
+    // 2. Newly assigned workers (not in active list)
     for (const workerId of Object.keys(newByWorker)) {
       if (!activeByWorker[workerId]) {
         toAdd.push(...newByWorker[workerId]);
       }
     }
 
-    // Perform operations in transaction
-    await prisma.$transaction([
-      // Add new/updated assignments
+    // Execute all changes concurrently
+    await Promise.all([
+      // Soft-delete removed assignments
+      toRemoveIds.length > 0
+        ? WorkAssignment.updateMany(
+            { _id: { $in: toRemoveIds } },
+            { $set: { unassignedAt: now } }
+          )
+        : Promise.resolve(),
+      // Create new assignments
       ...toAdd.map((item) =>
-        prisma.workAssignment.create({
-          data: {
-            workId,
-            workerId: item.workerId,
-            assignedAt: now,
-            unassignedAt: null,
-            shift: item.shift,
-            amount: item.amount !== undefined ? item.amount : 500.0,
-          },
-        })
-      ),
-      // Soft-delete removed/edited assignments by updating unassignedAt
-      ...toRemove.map((active) =>
-        prisma.workAssignment.update({
-          where: { id: active.id },
-          data: { unassignedAt: now },
-        })
+        new WorkAssignment({
+          workId,
+          workerId: item.workerId,
+          assignedAt: now,
+          unassignedAt: null,
+          shift: item.shift,
+          amount: item.amount !== undefined ? item.amount : 500.0,
+        }).save()
       ),
     ]);
 
-    // Fetch updated list of active assignments
-    const updatedAssignments = await prisma.workAssignment.findMany({
-      where: { workId, unassignedAt: null },
-      include: {
-        worker: {
-          select: {
-            id: true,
-            name: true,
-            avatarUrl: true,
-            role: true,
-          },
-        },
-      },
-    });
+    // Fetch updated active assignments with worker details
+    const updatedAssignments = await WorkAssignment.find({ workId, unassignedAt: null })
+      .populate('workerId', 'id name avatarUrl role')
+      .lean();
 
-    // Return active assignments with worker detail mapped inline
-    const activeWorkers = updatedAssignments.map((a) => ({
-      ...a.worker,
-      assignmentId: a.id,
+    const activeWorkers = updatedAssignments.map((a: any) => ({
+      id: a.workerId?._id?.toString(),
+      name: a.workerId?.name,
+      avatarUrl: a.workerId?.avatarUrl,
+      role: a.workerId?.role,
+      assignmentId: a._id.toString(),
       shift: a.shift,
       amount: a.amount,
     }));
@@ -246,7 +248,7 @@ router.post('/sync', authMiddleware, async (req: AuthenticatedRequest, res: Resp
       message: 'Worker assignments synchronized successfully',
       activeWorkers,
       addedCount: toAdd.length,
-      removedCount: toRemove.length,
+      removedCount: toRemoveIds.length,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -258,68 +260,49 @@ router.post('/sync', authMiddleware, async (req: AuthenticatedRequest, res: Resp
   }
 });
 
-const updateAssignmentSchema = z.object({
-  assignedAt: z.string().transform((str) => new Date(str)).optional(),
-  unassignedAt: z.string().transform((str) => new Date(str)).nullable().optional(),
-  amount: z.number().nullable().optional(),
-  workTitle: z.string().min(1).optional(),
-  shift: z.string().min(1).optional(),
-});
-
 // PUT /api/assignments/:id - Update assignment details
 router.put('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const id = req.params.id as string;
+    const { id } = req.params;
     const data = updateAssignmentSchema.parse(req.body);
 
-    const assignment = await prisma.workAssignment.findUnique({
-      where: { id },
-      include: { work: true }
-    });
-
+    const assignment = await WorkAssignment.findById(id).populate('workId');
     if (!assignment) {
       res.status(404).json({ error: 'Assignment not found' });
       return;
     }
 
     const updateData: any = {};
-    if (data.assignedAt !== undefined) {
-      updateData.assignedAt = data.assignedAt;
-    }
-    if (data.unassignedAt !== undefined) {
-      updateData.unassignedAt = data.unassignedAt;
-    }
-    if (data.amount !== undefined) {
-      updateData.amount = data.amount;
-    }
-    if (data.shift !== undefined) {
-      updateData.shift = data.shift;
-    }
+    if (data.assignedAt !== undefined) updateData.assignedAt = data.assignedAt;
+    if (data.unassignedAt !== undefined) updateData.unassignedAt = data.unassignedAt;
+    if (data.amount !== undefined) updateData.amount = data.amount;
+    if (data.shift !== undefined) updateData.shift = data.shift;
 
-    // Update assignment
-    const updatedAssignment = await prisma.workAssignment.update({
-      where: { id },
-      data: updateData,
-      include: { work: true }
-    });
+    const updated = await WorkAssignment.findByIdAndUpdate(id, updateData, { new: true })
+      .populate('workId')
+      .lean();
 
-    // Update associated work title if workTitle is provided
+    // Update associated work title if provided
     if (data.workTitle !== undefined) {
-      await prisma.work.update({
-        where: { id: assignment.workId },
-        data: { title: data.workTitle }
-      });
+      await Work.findByIdAndUpdate(assignment.workId, { title: data.workTitle });
     }
 
+    const workObj = (updated as any)?.workId as any;
     res.json({
       message: 'Assignment updated successfully',
       assignment: {
-        ...updatedAssignment,
-        work: {
-          ...updatedAssignment.work,
-          title: data.workTitle || updatedAssignment.work.title
-        }
-      }
+        ...(updated as any),
+        id: (updated as any)?._id?.toString(),
+        _id: undefined,
+        work: workObj
+          ? {
+              ...workObj,
+              id: workObj._id?.toString(),
+              _id: undefined,
+              title: data.workTitle || workObj.title,
+            }
+          : null,
+      },
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -334,20 +317,15 @@ router.put('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Respon
 // DELETE /api/assignments/:id - Permanently delete an assignment record
 router.delete('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const id = req.params.id as string;
+    const { id } = req.params;
 
-    const assignment = await prisma.workAssignment.findUnique({
-      where: { id },
-    });
-
+    const assignment = await WorkAssignment.findById(id);
     if (!assignment) {
       res.status(404).json({ error: 'Assignment not found' });
       return;
     }
 
-    await prisma.workAssignment.delete({
-      where: { id },
-    });
+    await WorkAssignment.findByIdAndDelete(id);
 
     res.json({ message: 'Assignment deleted successfully' });
   } catch (error) {

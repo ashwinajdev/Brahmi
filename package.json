@@ -11,12 +11,15 @@
     "build": "node -e \"const cmd = process.env.VERCEL ? 'npm run build --workspace=frontend' : 'npm run build --workspace=backend && npm run build --workspace=frontend'; require('child_process').execSync(cmd, {stdio: 'inherit'});\"",
     "start": "npm start --workspace=backend",
     "db:seed": "npm run db:seed --workspace=backend",
-    "postinstall": "node -e \"if (!process.env.VERCEL && !process.env.CI) { try { require('child_process').execSync('npm run setup --workspace=backend', {stdio: 'inherit'}); } catch(e) { process.exit(0); } }\""
+    "postinstall": "node -e \"if (!process.env.VERCEL && !process.env.CI) { try { require('child_process').execSync('npm run create-admin --workspace=backend', {stdio: 'inherit'}); } catch(e) { process.exit(0); } }\""
   },
   "devDependencies": {
     "concurrently": "^9.1.0"
   },
   "overrides": {
     "vite": "^6.0.0"
+  },
+  "dependencies": {
+    "mongodb": "^7.5.0"
   }
 }

@@ -50,7 +50,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
     queryKey: ['dashboard-stats'],
     queryFn: () => api.get<DashboardStats>('/dashboard/stats'),
     refetchInterval: 15000,       // Refresh every 15 seconds
-    staleTime: 0,                 // Always treat data as stale → show freshest on refetch
+    staleTime: 10000,             // Cache data for 10 seconds to prevent unnecessary stutter
     refetchOnWindowFocus: true,   // Re-fetch when tab becomes active again
   });
 
@@ -107,7 +107,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           tabIndex={0}
           aria-label={`Today's work items: ${todaysWorksCount}. Click to view task board.`}
           onKeyDown={(e) => e.key === 'Enter' && onNavigate('works')}
-          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl flex items-center justify-between shadow-sm hover:shadow-md dark:hover:border-slate-700 hover:-translate-y-0.5 transition-all cursor-pointer select-none"
+          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl flex items-center justify-between shadow-sm hover:shadow-md dark:hover:border-slate-700 hover:-translate-y-0.5 transition-all cursor-pointer select-none touch-active"
         >
           <div className="space-y-0.5">
             <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Today's Work</span>
@@ -126,7 +126,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           tabIndex={0}
           aria-label={`Assigned workers: ${assignedWorkersCount}. Click to view workers.`}
           onKeyDown={(e) => e.key === 'Enter' && onNavigate('workers')}
-          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl flex items-center justify-between shadow-sm hover:shadow-md dark:hover:border-slate-700 hover:-translate-y-0.5 transition-all cursor-pointer select-none"
+          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl flex items-center justify-between shadow-sm hover:shadow-md dark:hover:border-slate-700 hover:-translate-y-0.5 transition-all cursor-pointer select-none touch-active"
         >
           <div className="space-y-0.5">
             <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Assigned Workers</span>

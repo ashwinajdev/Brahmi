@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const mongoose_js_1 = require("./db/mongoose.js");
 const auth_js_1 = __importDefault(require("./routes/auth.js"));
 const workers_js_1 = __importDefault(require("./routes/workers.js"));
 const works_js_1 = __importDefault(require("./routes/works.js"));
@@ -44,9 +45,7 @@ app.use((err, req, res, next) => {
     console.error('Unhandled Error:', err);
     res.status(500).json({ error: 'Internal Server Error' });
 });
-// Start Server
-app.listen(PORT, () => {
-    console.log(`Brahmi API Server is running on port ${PORT}`);
+function startKeepAlive() {
     // ── Keep-Alive: prevent Render free-tier spin-down ──────────────────────
     // Only activates when RENDER_BACKEND_URL is set (i.e. in production).
     // Pings /health every 10 minutes so the dyno never goes idle.
@@ -88,4 +87,16 @@ app.listen(PORT, () => {
         }, INTERVAL_MS);
     }
     // ────────────────────────────────────────────────────────────────────────
+}
+// Connect to MongoDB, then start server
+(0, mongoose_js_1.connectDB)()
+    .then(() => {
+    app.listen(PORT, () => {
+        console.log(`Brahmi API Server is running on port ${PORT}`);
+        startKeepAlive();
+    });
+})
+    .catch((err) => {
+    console.error('Failed to connect to MongoDB', err);
+    process.exit(1);
 });

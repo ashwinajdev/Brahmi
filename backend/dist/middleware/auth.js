@@ -5,6 +5,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.authMiddleware = authMiddleware;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable must be set in production!');
+}
 const JWT_SECRET = process.env.JWT_SECRET || 'brahmi_secure_jwt_secret_token_123!';
 function authMiddleware(req, res, next) {
     const authHeader = req.headers.authorization;

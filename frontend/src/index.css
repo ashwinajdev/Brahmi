@@ -236,6 +236,7 @@ body {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
   max-height: 18rem;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   animation: custom-select-open 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -255,6 +256,7 @@ body {
   justify-content: space-between;
   gap: 0.5rem;
   padding: 0.625rem 0.875rem;
+  min-height: 42px;
   border-radius: 0.5rem;
   font-size: 0.875rem;
   font-weight: 500;
@@ -345,10 +347,30 @@ body {
   border: 1px solid rgba(71, 85, 105, 0.2);
 }
 
-/* Safari standalone mode padding adjustments */
+/* Safari standalone mode & mobile safe-area padding adjustments */
 @media all and (display-mode: standalone) {
   body {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
+
+/* Mobile Touch & Performance Optimization Classes */
+.touch-active {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease;
+}
+.touch-active:active {
+  transform: scale(0.96);
+  opacity: 0.9;
+}
+
+.gpu-accelerated {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.safe-pb {
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+}
+

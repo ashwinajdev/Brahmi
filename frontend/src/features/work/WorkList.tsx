@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, memo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api.ts';
 import { useAppStore } from '../../lib/store.ts';
@@ -1035,7 +1035,7 @@ interface WorkCardProps {
   onClick: () => void;
 }
 
-function WorkCard({ work, onClick }: WorkCardProps) {
+const WorkCard = memo(function WorkCard({ work, onClick }: WorkCardProps) {
   // Prevent click propagation when clicking stack
   const stopProp = (e: React.MouseEvent) => e.stopPropagation();
 
@@ -1058,7 +1058,7 @@ function WorkCard({ work, onClick }: WorkCardProps) {
   return (
     <div
       onClick={onClick}
-      className={`bg-white dark:bg-slate-900 border p-3 rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between min-h-[85px] ${
+      className={`bg-white dark:bg-slate-900 border p-3.5 rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between min-h-[88px] touch-active ${
         isOverdue
           ? 'border-red-200 dark:border-red-900/50 hover:border-red-300 dark:hover:border-red-800'
           : 'border-slate-150 dark:border-slate-850 dark:hover:border-slate-800/80'
@@ -1088,14 +1088,14 @@ function WorkCard({ work, onClick }: WorkCardProps) {
       </div>
     </div>
   );
-}
+});
 
 /* Avatar Stack Display Helper */
 interface AvatarStackProps {
   workers: Worker[];
 }
 
-function AvatarStack({ workers }: AvatarStackProps) {
+const AvatarStack = memo(function AvatarStack({ workers }: AvatarStackProps) {
   if (!workers || workers.length === 0) {
     return <span className="text-[10px] italic text-slate-400">Unassigned</span>;
   }
@@ -1116,6 +1116,8 @@ function AvatarStack({ workers }: AvatarStackProps) {
           src={worker.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(worker.name)}`}
           alt={worker.name}
           title={`${worker.name} (${worker.role})`}
+          loading="lazy"
+          decoding="async"
         />
       ))}
       {overflow > 0 && (
@@ -1125,4 +1127,4 @@ function AvatarStack({ workers }: AvatarStackProps) {
       )}
     </div>
   );
-}
+});

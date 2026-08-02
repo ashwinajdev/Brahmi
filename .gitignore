@@ -118,7 +118,6 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Database / SQLite / Prisma
+# Database files
 *.db
 *.db-journal
-/backend/prisma/dev.db
