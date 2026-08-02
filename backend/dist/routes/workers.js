@@ -23,7 +23,7 @@ const workerSchema = zod_1.z.object({
     avatarUrl: zod_1.z.string().or(zod_1.z.literal('')).optional().nullable(),
     isActive: zod_1.z.boolean().optional(),
 });
-// Helper: serialize a worker document to match old Prisma response shape
+// Helper: serialize a worker document with id string (matches API response shape)
 function serializeWorker(worker) {
     const obj = worker.toObject ? worker.toObject() : { ...worker };
     return {

@@ -91,9 +91,26 @@ function startKeepAlive() {
 // Connect to MongoDB, then start server
 (0, mongoose_js_1.connectDB)()
     .then(() => {
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
         console.log(`Brahmi API Server is running on port ${PORT}`);
         startKeepAlive();
+    });
+    server.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.error('');
+            console.error('❌ ERROR: Port', PORT, 'is already in use.');
+            console.error('');
+            console.error('   Another backend instance (or another process) is already listening on :' + PORT + '.');
+            console.error('');
+            console.error('   → To fix on Windows, run:');
+            console.error('     netstat -ano | findstr :' + PORT);
+            console.error('     taskkill /PID <process-id> /F');
+            console.error('');
+            console.error('   → Or just close the other terminal running the backend.');
+            process.exit(1);
+        }
+        console.error('Server error:', err);
+        process.exit(1);
     });
 })
     .catch((err) => {
