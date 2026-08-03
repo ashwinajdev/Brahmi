@@ -73,7 +73,9 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
   const [editingWork, setEditingWork] = useState<Work | null>(null);
   const [selectedWorkId, setSelectedWorkId] = useState<string | null>(initialSelectedWorkId);
 
-
+  useEffect(() => {
+    setSelectedWorkId(initialSelectedWorkId);
+  }, [initialSelectedWorkId]);
 
   // Worker selector command-palette state
   const [isEditingAssignments, setIsEditingAssignments] = useState(false);
@@ -450,7 +452,9 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                         <WorkCard
                           key={work.id}
                           work={work}
-                          onClick={() => setSelectedWorkId(work.id)}
+                          onClick={() => {
+                            window.location.hash = `#works/${work.id}`;
+                          }}
                         />
                       ))
                     )}
@@ -503,7 +507,9 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                         className={`hover:bg-slate-50 dark:hover:bg-slate-800/10 cursor-pointer transition-colors ${
                           isOverdue ? 'bg-red-50/10 dark:bg-red-950/5' : ''
                         }`}
-                        onClick={() => setSelectedWorkId(work.id)}
+                        onClick={() => {
+                          window.location.hash = `#works/${work.id}`;
+                        }}
                       >
                         <td className="p-4 max-w-xs">
                           <div className="flex items-center gap-2 truncate">
@@ -584,8 +590,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
               </span>
               <button
                 onClick={() => {
-                  setSelectedWorkId(null);
-                  if (onClearSelection) onClearSelection();
+                  window.location.hash = '#works';
                 }}
                 aria-label="Close work details"
                 className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg cursor-pointer"

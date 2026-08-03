@@ -4,7 +4,7 @@ import Work from '../models/Work.js';
 import { autoUpdatePastWorks } from '../utils/workHelper.js';
 import mongoose from 'mongoose';
 
-describe('Auto Rollover of Past Uncompleted Tasks', () => {
+describe('Auto-complete overdue pending works', () => {
   let testPastWorkId: string;
   let testCompletedPastWorkId: string;
   let testFutureWorkId: string;
@@ -19,7 +19,7 @@ describe('Auto Rollover of Past Uncompleted Tasks', () => {
 
     const pastWork = new Work({
       title: 'Test Past Work (Incomplete)',
-      description: 'Should be rolled over',
+      description: 'Should be auto-completed',
       category: 'Testing',
       priority: 'medium',
       status: 'pending',
@@ -31,7 +31,7 @@ describe('Auto Rollover of Past Uncompleted Tasks', () => {
     // 2. Create a past completed task (yesterday)
     const completedPastWork = new Work({
       title: 'Test Past Work (Completed)',
-      description: 'Should NOT be rolled over',
+      description: 'Should remain completed',
       category: 'Testing',
       priority: 'medium',
       status: 'completed',
@@ -47,7 +47,7 @@ describe('Auto Rollover of Past Uncompleted Tasks', () => {
 
     const futureWork = new Work({
       title: 'Test Future Work',
-      description: 'Should NOT be rolled over',
+      description: 'Should NOT be auto-completed yet',
       category: 'Testing',
       priority: 'medium',
       status: 'pending',
@@ -65,28 +65,22 @@ describe('Auto Rollover of Past Uncompleted Tasks', () => {
     await mongoose.disconnect();
   });
 
-  it('should preserve past uncompleted tasks and not touch others (no db mutation)', async () => {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    yesterday.setUTCHours(0, 0, 0, 0);
-
+  it('should complete past overdue pending works and leave other tasks unchanged', async () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setUTCHours(0, 0, 0, 0);
 
-    // Call rollover function
+    // Call auto-completion helper
     await autoUpdatePastWorks();
 
-    // Verify past incomplete task remained at yesterday's date (no database mutation)
     const updatedPastWork = await Work.findById(testPastWorkId);
-    expect(updatedPastWork?.dueDate.toISOString()).toBe(yesterday.toISOString());
+    expect(updatedPastWork?.status).toBe('completed');
 
-    // Verify past completed task remained at yesterday's date
     const updatedCompletedPastWork = await Work.findById(testCompletedPastWorkId);
-    expect(updatedCompletedPastWork?.dueDate.toISOString()).toBe(yesterday.toISOString());
+    expect(updatedCompletedPastWork?.status).toBe('completed');
 
-    // Verify future task remained at tomorrow's date
     const updatedFutureWork = await Work.findById(testFutureWorkId);
+    expect(updatedFutureWork?.status).toBe('pending');
     expect(updatedFutureWork?.dueDate.toISOString()).toBe(tomorrow.toISOString());
   });
 });

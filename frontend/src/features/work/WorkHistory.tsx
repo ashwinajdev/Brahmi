@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api.ts';
 import { useAppStore } from '../../lib/store.ts';
@@ -57,13 +57,21 @@ interface WorkDetails extends Work {
   assignmentHistory: AssignmentLog[];
 }
 
-export default function WorkHistory() {
+interface WorkHistoryProps {
+  initialSelectedWorkId?: string | null;
+}
+
+export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistoryProps) {
   const queryClient = useQueryClient();
   const { addToast, showConfirm } = useAppStore();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedWorkId, setSelectedWorkId] = useState<string | null>(null);
+  const [selectedWorkId, setSelectedWorkId] = useState<string | null>(initialSelectedWorkId);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  useEffect(() => {
+    setSelectedWorkId(initialSelectedWorkId);
+  }, [initialSelectedWorkId]);
 
   // Detail View Date Filters State
   const [dateFilterType, setDateFilterType] = useState<'all' | 'specific' | 'this-month' | 'last-month' | 'custom'>('all');
@@ -85,20 +93,27 @@ export default function WorkHistory() {
     }));
   };
 
-  // Fetch completed works
+  // Fetch grouped completed works
   const { data: completedWorks = [], isLoading, isError, error } = useQuery<Work[]>({
     queryKey: ['completedWorks', searchTerm],
     queryFn: () => {
       const params = new URLSearchParams();
-      params.append('status', 'completed');
       if (searchTerm) params.append('search', searchTerm);
-      return api.get<Work[]>(`/works?${params.toString()}`);
+      return api.get<Work[]>(`/works/grouped?${params.toString()}`);
     },
   });
 
   const { data: workDetails, isLoading: isLoadingDetails } = useQuery<WorkDetails>({
     queryKey: ['work-details', selectedWorkId],
-    queryFn: () => api.get<WorkDetails>(`/works/${selectedWorkId}`),
+    queryFn: () => {
+      // If the selected work has assignmentHistory already (from grouped endpoint), use it directly
+      const selectedWork = completedWorks.find((w) => w.id === selectedWorkId);
+      if (selectedWork && (selectedWork as any).assignmentHistory) {
+        return Promise.resolve(selectedWork as WorkDetails);
+      }
+      // Otherwise fall back to individual work endpoint
+      return api.get<WorkDetails>(`/works/${selectedWorkId}`);
+    },
     enabled: !!selectedWorkId,
   });
 
@@ -293,50 +308,62 @@ export default function WorkHistory() {
 
       if (editedTotalAmount !== originalAmount || editedShiftsSorted !== originalShiftsSorted || editedWorkerId !== item.workerId) {
         const amtPerShift = editedTotalAmount / (editedShifts.length || 1);
-        const workId = originalAssignments[0]?.workId;
+        
+        // Group assignments by workId for grouped works
+        const assignmentsByWorkId: Record<string, any[]> = {};
+        for (const orig of originalAssignments) {
+          const workId = orig.workId;
+          if (!assignmentsByWorkId[workId]) {
+            assignmentsByWorkId[workId] = [];
+          }
+          assignmentsByWorkId[workId].push(orig);
+        }
 
-        if (editedWorkerId !== item.workerId) {
-          // Delete all original assignments for this worker
-          for (const orig of originalAssignments) {
-            ops.push({
-              type: 'delete',
-              id: orig.id,
-              payload: { unassignedAt: new Date().toISOString() },
-            });
-          }
-          // Create new assignments for the new worker
-          for (const shift of editedShifts) {
-            ops.push({
-              type: 'create',
-              payload: { workId, workerId: editedWorkerId, shift, amount: amtPerShift },
-            });
-          }
-        } else {
-          // Process additions and updates for same worker
-          for (const shift of editedShifts) {
-            const match = originalAssignments.find((a: any) => a.shift === shift);
-            if (match) {
-              ops.push({
-                type: 'update',
-                id: match.id,
-                payload: { amount: amtPerShift, shift },
-              });
-            } else {
-              ops.push({
-                type: 'create',
-                payload: { workId, workerId: editedWorkerId, shift, amount: amtPerShift },
-              });
-            }
-          }
-
-          // Process removals
-          for (const orig of originalAssignments) {
-            if (!editedShifts.includes(orig.shift)) {
+        // Process each workId group
+        for (const [workId, workAssignments] of Object.entries(assignmentsByWorkId)) {
+          if (editedWorkerId !== item.workerId) {
+            // Delete all original assignments for this worker in this work
+            for (const orig of workAssignments) {
               ops.push({
                 type: 'delete',
                 id: orig.id,
                 payload: { unassignedAt: new Date().toISOString() },
               });
+            }
+            // Create new assignments for the new worker
+            for (const shift of editedShifts) {
+              ops.push({
+                type: 'create',
+                payload: { workId, workerId: editedWorkerId, shift, amount: amtPerShift },
+              });
+            }
+          } else {
+            // Process additions and updates for same worker
+            for (const shift of editedShifts) {
+              const match = workAssignments.find((a: any) => a.shift === shift);
+              if (match) {
+                ops.push({
+                  type: 'update',
+                  id: match.id,
+                  payload: { amount: amtPerShift, shift },
+                });
+              } else {
+                ops.push({
+                  type: 'create',
+                  payload: { workId, workerId: editedWorkerId, shift, amount: amtPerShift },
+                });
+              }
+            }
+
+            // Process removals
+            for (const orig of workAssignments) {
+              if (!editedShifts.includes(orig.shift)) {
+                ops.push({
+                  type: 'delete',
+                  id: orig.id,
+                  payload: { unassignedAt: new Date().toISOString() },
+                });
+              }
             }
           }
         }
@@ -390,7 +417,11 @@ export default function WorkHistory() {
         <div className="flex items-center justify-between">
           <button
             onClick={() => {
-              setSelectedWorkId(null);
+              if (window.history.length > 1) {
+                window.history.back();
+              } else {
+                window.location.hash = '#history';
+              }
               setIsDetailEditing(false);
             }}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
@@ -410,6 +441,11 @@ export default function WorkHistory() {
             <div className="glass-panel p-5 rounded-2xl border border-slate-200 bg-white space-y-3 relative select-none">
               <div className="flex items-center gap-2">
                 {getPriorityBadge(workDetails.priority)}
+                {(workDetails as any).occurrencesCount > 1 && (
+                  <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase bg-sky-500/10 text-sky-600 rounded-md border border-sky-500/20">
+                    {(workDetails as any).occurrencesCount} Instances Combined
+                  </span>
+                )}
               </div>
               <h3 className="font-extrabold text-slate-900 text-lg leading-snug tracking-tight">
                 {workDetails.title}
@@ -803,7 +839,9 @@ const filteredWorks = sortedCompletedWorks;
           {filteredWorks.map((work, index) => (
             <div 
               key={work.id} 
-              onClick={() => setSelectedWorkId(work.id)}
+              onClick={() => {
+                window.location.hash = `#history/${work.id}`;
+              }}
               className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 hover:border-sky-500 dark:hover:border-sky-400 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between gap-3.5 group touch-active"
             >
               <div className="space-y-2.5">
@@ -812,6 +850,9 @@ const filteredWorks = sortedCompletedWorks;
                     <div className="flex items-center gap-1.5">
                       <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase bg-sky-500/10 text-sky-600 dark:bg-sky-500/20 dark:text-sky-400 rounded-md border border-sky-500/20">
                         {(work as any).occurrencesCount} Instances
+                      </span>
+                      <span className="text-[9px] text-slate-400 font-semibold">
+                        Combined history from all occurrences
                       </span>
                     </div>
                   </div>

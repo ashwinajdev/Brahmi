@@ -29,6 +29,117 @@ function serializeWork(work: any, assignedWorkers: any[] = []) {
   };
 }
 
+// GET /api/works/grouped - Group completed works by title with combined assignment history
+router.get('/grouped', authMiddleware, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    await autoUpdatePastWorks();
+
+    const { search } = req.query;
+
+    const filter: any = { status: 'completed' };
+
+    if (search) {
+      const regex = new RegExp(String(search), 'i');
+      filter.$or = [
+        { title: regex },
+        { description: regex },
+        { location: regex },
+      ];
+    }
+
+    const works = await Work.find(filter)
+      .select('title description category priority status dueDate location createdAt updatedAt')
+      .sort({ dueDate: -1 })
+      .lean();
+
+    if (works.length === 0) {
+      res.json([]);
+      return;
+    }
+
+    // Group works by title
+    const worksByTitle: Record<string, any[]> = {};
+    for (const work of works) {
+      if (!worksByTitle[work.title]) {
+        worksByTitle[work.title] = [];
+      }
+      worksByTitle[work.title].push(work);
+    }
+
+    // For each title group, get all assignments from all works in that group
+    const groupedWorks = [];
+    for (const [title, workGroup] of Object.entries(worksByTitle)) {
+      const workIds = workGroup.map((w) => w._id);
+
+      // Get all assignments for all works in this group
+      const assignments = await WorkAssignment.find({ workId: { $in: workIds } })
+        .populate({
+          path: 'workerId',
+          select: 'name avatarUrl role phone alternatePhone email isActive',
+        })
+        .sort({ assignedAt: -1 })
+        .lean();
+
+      // Get the most recent work for display
+      const mostRecentWork = workGroup[0];
+
+      // Calculate total occurrences
+      const occurrencesCount = workGroup.length;
+
+      // Combine assignment history from all works
+      const combinedAssignmentHistory = assignments.map((a: any) => ({
+        id: a._id.toString(),
+        workId: a.workId?.toString() ?? a.workId,
+        workerId: a.workerId?._id?.toString() ?? a.workerId?.toString(),
+        workerName: a.workerId?.name,
+        workerAvatarUrl: a.workerId?.avatarUrl,
+        assignedAt: a.assignedAt,
+        unassignedAt: a.unassignedAt,
+        amount: a.amount,
+        shift: a.shift,
+      }));
+
+      // Get active workers from the most recent work
+      const mostRecentWorkId = mostRecentWork._id.toString();
+      const activeAssignments = assignments.filter(
+        (a) => a.workId?.toString() === mostRecentWorkId && a.unassignedAt === null
+      );
+
+      const activeWorkers = activeAssignments.map((a: any) => ({
+        id: a.workerId?._id?.toString(),
+        name: a.workerId?.name,
+        avatarUrl: a.workerId?.avatarUrl,
+        role: a.workerId?.role,
+        phone: a.workerId?.phone,
+        alternatePhone: a.workerId?.alternatePhone,
+        email: a.workerId?.email,
+        isActive: a.workerId?.isActive,
+        assignmentId: a._id.toString(),
+        shift: a.shift,
+        amount: a.amount,
+      }));
+
+      groupedWorks.push({
+        ...mostRecentWork,
+        id: mostRecentWork._id.toString(),
+        _id: undefined,
+        assignedWorkers: activeWorkers,
+        assignmentHistory: combinedAssignmentHistory,
+        occurrencesCount,
+        allWorkIds: workIds.map((id) => id.toString()),
+      });
+    }
+
+    // Sort by most recent due date
+    groupedWorks.sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+
+    res.json(groupedWorks);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to retrieve grouped works' });
+  }
+});
+
 // GET /api/works - List all work tasks
 router.get('/', authMiddleware, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {

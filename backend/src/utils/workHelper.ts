@@ -1,4 +1,16 @@
-// autoUpdatePastWorks is a no-op kept for backwards compatibility.
+import Work from '../models/Work.js';
+
 export async function autoUpdatePastWorks(): Promise<void> {
-  // Nothing to do.
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  await Work.updateMany(
+    {
+      status: 'pending',
+      dueDate: { $lt: startOfToday },
+    },
+    {
+      status: 'completed',
+    }
+  );
 }

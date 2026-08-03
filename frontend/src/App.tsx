@@ -54,17 +54,24 @@ export default function App() {
   // Listen to hash changes for routing
   useEffect(() => {
     const handleHashChange = () => {
-      // Parse hash and see if it contains a work task sub-detail route
-      // e.g. #works/uuid
       const hash = window.location.hash || '#dashboard';
+
       if (hash.startsWith('#works/')) {
         const id = hash.split('#works/')[1];
         setSelectedWorkId(id);
         setCurrentHash('#works');
-      } else {
-        setSelectedWorkId(null);
-        setCurrentHash(hash);
+        return;
       }
+
+      if (hash.startsWith('#history/')) {
+        const id = hash.split('#history/')[1];
+        setSelectedWorkId(id);
+        setCurrentHash('#history');
+        return;
+      }
+
+      setSelectedWorkId(null);
+      setCurrentHash(hash);
     };
 
     window.addEventListener('hashchange', handleHashChange);
@@ -204,7 +211,9 @@ export default function App() {
       activeTab = 'history';
       pageContent = (
         <Suspense fallback={<PageLoader />}>
-          <WorkHistory />
+          <WorkHistory
+            initialSelectedWorkId={selectedWorkId}
+          />
         </Suspense>
       );
       break;
