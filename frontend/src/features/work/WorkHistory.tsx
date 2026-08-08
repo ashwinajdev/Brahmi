@@ -61,6 +61,19 @@ interface WorkHistoryProps {
   initialSelectedWorkId?: string | null;
 }
 
+const getLocalDateInputValue = () => {
+  const date = new Date();
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
+
+const formatWorkerName = (name: string) =>
+  name
+    .trim()
+    .toLowerCase()
+    .replace(/(?:^|[\s-])\S/g, (letter) => letter.toUpperCase());
+
+const AMOUNT_PER_WORKER = 500;
+
 export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistoryProps) {
   const queryClient = useQueryClient();
   const { addToast, showConfirm } = useAppStore();
@@ -82,6 +95,9 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
   // Bulk Edit State
   const [isDetailEditing, setIsDetailEditing] = useState(false);
   const [editedDetails, setEditedDetails] = useState<Record<string, { amount: string; shift: string; workerId: string }>>({});
+  const [isAddLogModalOpen, setIsAddLogModalOpen] = useState(false);
+  const [isWorkerPickerOpen, setIsWorkerPickerOpen] = useState(false);
+  const [newLog, setNewLog] = useState({ date: '', workerIds: [] as string[], shift: 'Tiffin' });
 
   // Collapse state for date groupings in detail view
   const [collapsedDates, setCollapsedDates] = useState<Record<string, boolean>>({});
@@ -264,6 +280,57 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
       addToast(err.message || 'Failed to update work history logs', 'error');
     }
   });
+
+  const createWorkHistoryLogMutation = useMutation({
+    mutationFn: (payloads: Array<{ workId: string; workerId: string; assignedAt: string; unassignedAt: string; shift: string; amount: number }>) =>
+      Promise.all(payloads.map((payload) => api.post('/assignments', payload))),
+    onSuccess: async () => {
+      // The detail view can be sourced from the grouped works cache, so refresh it first.
+      await queryClient.invalidateQueries({ queryKey: ['completedWorks'] });
+      await queryClient.invalidateQueries({ queryKey: ['work-details', selectedWorkId] });
+      queryClient.invalidateQueries({ queryKey: ['worker-history'] });
+      queryClient.invalidateQueries({ queryKey: ['workers'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      addToast('Work logs added successfully', 'success');
+      setIsAddLogModalOpen(false);
+      setIsWorkerPickerOpen(false);
+    },
+    onError: (err: any) => {
+      addToast(err.message || 'Failed to add work log', 'error');
+    },
+  });
+
+  const handleOpenAddLog = () => {
+    setNewLog({ date: getLocalDateInputValue(), workerIds: [], shift: 'Tiffin' });
+    setIsWorkerPickerOpen(false);
+    setIsAddLogModalOpen(true);
+  };
+
+  const handleCreateWorkLog = () => {
+    if (!selectedWorkId || !newLog.date || newLog.workerIds.length === 0) {
+      addToast('Please enter a date and select at least one worker', 'error');
+      return;
+    }
+
+    const selectedDate = new Date(`${newLog.date}T12:00:00`);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (selectedDate > today) {
+      addToast('Work logs can only be added for today or an earlier date', 'error');
+      return;
+    }
+
+    createWorkHistoryLogMutation.mutate(newLog.workerIds.map((workerId) => ({
+      workId: selectedWorkId,
+      workerId,
+      // Noon local time avoids a timezone offset moving the selected calendar date.
+      assignedAt: selectedDate.toISOString(),
+      // Historical logs are completed records, not current work assignments.
+      unassignedAt: selectedDate.toISOString(),
+      shift: newLog.shift,
+      amount: AMOUNT_PER_WORKER,
+    })));
+  };
 
   const handleStartDetailEdit = () => {
     const initialEdits: Record<string, any> = {};
@@ -536,7 +603,15 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
             <div className="glass-panel rounded-2xl border border-slate-200 overflow-hidden bg-white">
               <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Work Logs History</h3>
-                {groupedByDate.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleOpenAddLog}
+                    className="px-3 py-1.5 bg-white hover:bg-sky-50 text-sky-600 rounded-lg text-[10px] font-extrabold shadow-sm transition-colors flex items-center gap-1 cursor-pointer border border-sky-200"
+                  >
+                    <Plus className="w-3 h-3" /> Add Log
+                  </button>
+                  {groupedByDate.length > 0 && (
                   <div>
                     {isDetailEditing ? (
                       <div className="flex items-center gap-2">
@@ -562,7 +637,8 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
                       </button>
                     )}
                   </div>
-                )}
+                  )}
+                </div>
               </div>
 
               <div className="p-4 space-y-6">
@@ -773,6 +849,100 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
                 )}
               </div>
             </div>
+
+            {isAddLogModalOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40" role="dialog" aria-modal="true" aria-labelledby="add-work-log-title">
+                <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl border border-slate-200 p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 id="add-work-log-title" className="text-base font-extrabold text-slate-800">Add Work Log</h3>
+                      <p className="text-xs text-slate-400 mt-0.5">Add a completed work record for today or any earlier date.</p>
+                    </div>
+                    <button type="button" onClick={() => setIsAddLogModalOpen(false)} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 cursor-pointer" aria-label="Close add work log dialog">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label className="flex flex-col gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                      Date
+                      <input type="date" max={getLocalDateInputValue()} value={newLog.date} onChange={(e) => setNewLog((prev) => ({ ...prev, date: e.target.value }))} className="px-3 py-2 rounded-lg border border-slate-200 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-sky-500" />
+                    </label>
+                    <label className="flex flex-col gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                    Total amount
+                      <input type="text" readOnly value={`₹${newLog.workerIds.length * AMOUNT_PER_WORKER}`} className="px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 cursor-default" />
+                  </label>
+                </div>
+
+                  <div className="flex flex-col gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                    Worker
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setIsWorkerPickerOpen((isOpen) => !isOpen)}
+                        aria-expanded={isWorkerPickerOpen}
+                        aria-haspopup="listbox"
+                        className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-semibold normal-case tracking-normal text-left text-slate-700 hover:border-sky-300 focus:outline-none focus:ring-1 focus:ring-sky-500 cursor-pointer"
+                      >
+                        <span className={newLog.workerIds.length ? 'truncate' : 'text-slate-400'}>
+                          {newLog.workerIds.length
+                            ? roster.filter((worker: any) => newLog.workerIds.includes(worker.id)).map((worker: any) => formatWorkerName(worker.name)).join(', ')
+                            : 'Select workers'}
+                        </span>
+                        <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isWorkerPickerOpen ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {isWorkerPickerOpen && (
+                        <div role="listbox" aria-multiselectable="true" className="absolute z-[60] top-[calc(100%+6px)] left-0 right-0 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl normal-case tracking-normal max-h-48 overflow-y-auto">
+                          {roster.filter((worker: any) => worker.isActive !== false).map((worker: any) => {
+                            const isSelected = newLog.workerIds.includes(worker.id);
+                            return (
+                              <button
+                                key={worker.id}
+                                type="button"
+                                role="option"
+                                aria-selected={isSelected}
+                                onClick={() => setNewLog((prev) => ({
+                                  ...prev,
+                                  workerIds: isSelected
+                                    ? prev.workerIds.filter((id) => id !== worker.id)
+                                    : [...prev.workerIds, worker.id],
+                                }))}
+                                className={`w-full min-h-10 px-3 py-2 rounded-lg flex items-center justify-between gap-3 text-left text-sm font-semibold transition-colors cursor-pointer ${isSelected ? 'bg-sky-50 text-sky-700' : 'text-slate-700 hover:bg-slate-50'}`}
+                              >
+                                <span>{formatWorkerName(worker.name)}</span>
+                                <span className={`w-4 h-4 shrink-0 rounded border flex items-center justify-center ${isSelected ? 'bg-sky-600 border-sky-600 text-white' : 'border-slate-300 bg-white'}`}>
+                                  {isSelected && <Check className="w-3 h-3" />}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    <span className="normal-case tracking-normal text-[10px] font-medium text-slate-400">₹500 is added for each selected worker.</span>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Shift</span>
+                    <div className="flex gap-2">
+                      {['Tiffin', 'Lunch', 'Dinner'].map((shift) => (
+                        <button key={shift} type="button" onClick={() => setNewLog((prev) => ({ ...prev, shift }))} className={`flex-1 px-2 py-2 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${newLog.shift === shift ? 'bg-sky-600 border-sky-600 text-white' : 'bg-white border-slate-200 text-slate-500 hover:border-sky-300'}`}>
+                          {shift}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-1">
+                    <button type="button" onClick={() => setIsAddLogModalOpen(false)} className="px-3 py-2 rounded-lg text-xs font-extrabold text-slate-600 hover:bg-slate-100 cursor-pointer">Cancel</button>
+                    <button type="button" onClick={handleCreateWorkLog} disabled={createWorkHistoryLogMutation.isPending} className="px-3 py-2 rounded-lg text-xs font-extrabold text-white bg-sky-600 hover:bg-sky-700 disabled:opacity-60 cursor-pointer flex items-center gap-1.5">
+                      {createWorkHistoryLogMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add Log
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

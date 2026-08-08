@@ -12,6 +12,8 @@ const router = Router();
 const assignmentSchema = z.object({
   workId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Work ID'),
   workerId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Worker ID'),
+  assignedAt: z.string().transform((str) => new Date(str)).refine((date) => !Number.isNaN(date.getTime()), 'Invalid assigned date').optional(),
+  unassignedAt: z.string().transform((str) => new Date(str)).refine((date) => !Number.isNaN(date.getTime()), 'Invalid completed date').nullable().optional(),
   shift: z.string().min(1).optional(),
   amount: z.number().nonnegative().optional(),
 });
@@ -38,8 +40,13 @@ const updateAssignmentSchema = z.object({
 // POST /api/assignments - Assign worker to work
 router.post('/', authMiddleware, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { workId, workerId, shift, amount } = assignmentSchema.parse(req.body);
+    const { workId, workerId, assignedAt, unassignedAt, shift, amount } = assignmentSchema.parse(req.body);
     const resolvedShift = shift || 'Tiffin';
+
+    if (assignedAt && unassignedAt && unassignedAt < assignedAt) {
+      res.status(400).json({ error: 'Completed date cannot be before the assigned date' });
+      return;
+    }
 
     const work = await Work.findById(workId).lean();
     if (!work) {
@@ -53,24 +60,26 @@ router.post('/', authMiddleware, async (req: AuthenticatedRequest, res: Response
       return;
     }
 
-    // Check for existing active assignment on this shift
-    const active = await WorkAssignment.findOne({
-      workId,
-      workerId,
-      shift: resolvedShift,
-      unassignedAt: null,
-    }).lean();
+    // Historical logs are already completed, so they can coexist with active assignments.
+    if (unassignedAt === undefined || unassignedAt === null) {
+      const active = await WorkAssignment.findOne({
+        workId,
+        workerId,
+        shift: resolvedShift,
+        unassignedAt: null,
+      }).lean();
 
-    if (active) {
-      res.status(400).json({ error: 'Worker is already actively assigned to this shift' });
-      return;
+      if (active) {
+        res.status(400).json({ error: 'Worker is already actively assigned to this shift' });
+        return;
+      }
     }
 
     const newAssignment = new WorkAssignment({
       workId,
       workerId,
-      assignedAt: new Date(),
-      unassignedAt: null,
+      assignedAt: assignedAt || new Date(),
+      unassignedAt: unassignedAt ?? null,
       shift: resolvedShift,
       amount: amount !== undefined ? amount : 500.0,
     });
