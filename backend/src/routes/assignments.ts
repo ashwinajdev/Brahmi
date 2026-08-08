@@ -29,6 +29,10 @@ const batchSyncSchema = z.object({
   assignments: z.array(syncAssignmentItemSchema),
 });
 
+const batchDeleteSchema = z.object({
+  ids: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid assignment ID')).min(1),
+});
+
 const updateAssignmentSchema = z.object({
   assignedAt: z.string().transform((str) => new Date(str)).optional(),
   unassignedAt: z.string().transform((str) => new Date(str)).nullable().optional(),
@@ -321,6 +325,22 @@ router.put('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Respon
     }
     console.error(error);
     res.status(500).json({ error: 'Failed to update assignment' });
+  }
+});
+
+// DELETE /api/assignments/batch - Permanently delete assignment records in one operation
+router.delete('/batch', authMiddleware, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { ids } = batchDeleteSchema.parse(req.body);
+    const result = await WorkAssignment.deleteMany({ _id: { $in: ids } });
+    res.json({ message: 'Assignment records deleted successfully', deletedCount: result.deletedCount });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ error: error.errors });
+      return;
+    }
+    console.error(error);
+    res.status(500).json({ error: 'Failed to delete assignment records' });
   }
 });
 

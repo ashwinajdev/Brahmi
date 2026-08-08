@@ -15,7 +15,8 @@ import {
   X,
   Edit2,
   Plus,
-  ChevronDown
+  ChevronDown,
+  Trash2,
 } from 'lucide-react';
 import WorkFormModal from './WorkFormModal.tsx';
 import CustomSelect from '../../components/ui/CustomSelect.tsx';
@@ -299,6 +300,39 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
       addToast(err.message || 'Failed to add work log', 'error');
     },
   });
+
+  const deleteDateLogsMutation = useMutation({
+    mutationFn: (assignmentIds: string[]) =>
+      api.delete('/assignments/batch', { ids: assignmentIds }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['completedWorks'] });
+      await queryClient.invalidateQueries({ queryKey: ['work-details', selectedWorkId] });
+      queryClient.invalidateQueries({ queryKey: ['worker-history'] });
+      queryClient.invalidateQueries({ queryKey: ['workers'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      setIsDetailEditing(false);
+      addToast('All work logs for this date were deleted', 'success');
+    },
+    onError: (err: any) => {
+      addToast(err.message || 'Failed to delete work logs for this date', 'error');
+    },
+  });
+
+  const handleDeleteDateLogs = (group: { dateRaw: string; items: any[] }) => {
+    const assignmentIds = [...new Set(group.items.flatMap((item) =>
+      item.originalHistoryItems.map((assignment: any) => assignment.id)
+    ))];
+
+    if (assignmentIds.length === 0) return;
+
+    showConfirm({
+      title: `Delete logs for ${formatDate(group.dateRaw)}?`,
+      message: `This will permanently delete all ${assignmentIds.length} work log${assignmentIds.length === 1 ? '' : 's'} recorded on this date. This cannot be undone.`,
+      confirmText: 'Delete Day',
+      isDestructive: true,
+      onConfirm: () => deleteDateLogsMutation.mutate(assignmentIds),
+    });
+  };
 
   const handleOpenAddLog = () => {
     setNewLog({ date: getLocalDateInputValue(), workerIds: [], shift: 'Tiffin' });
@@ -601,9 +635,9 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
 
             {/* Assignments list table card */}
             <div className="glass-panel rounded-2xl border border-slate-200 overflow-hidden bg-white">
-              <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+              <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Work Logs History</h3>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                   <button
                     type="button"
                     onClick={handleOpenAddLog}
@@ -612,18 +646,18 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
                     <Plus className="w-3 h-3" /> Add Log
                   </button>
                   {groupedByDate.length > 0 && (
-                  <div>
+                  <div className="flex items-center">
                     {isDetailEditing ? (
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => setIsDetailEditing(false)}
-                          className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-extrabold transition-colors flex items-center gap-1 cursor-pointer border border-slate-200"
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-extrabold transition-colors flex items-center gap-1 cursor-pointer border border-slate-200"
                         >
                           <X className="w-3 h-3" /> Cancel
                         </button>
                         <button
                           onClick={handleSaveAllDetails}
-                          className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-extrabold shadow transition-colors flex items-center gap-1 cursor-pointer"
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-extrabold shadow transition-colors flex items-center gap-1 cursor-pointer"
                         >
                           <Check className="w-3 h-3" /> Save All
                         </button>
@@ -671,6 +705,19 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
                                     isCollapsed ? '-rotate-90' : ''
                                   }`}
                                 />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleDeleteDateLogs(group);
+                                }}
+                                disabled={deleteDateLogsMutation.isPending}
+                                className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors cursor-pointer"
+                                aria-label={`Delete all logs for ${formatDate(group.dateRaw)}`}
+                                title="Delete all logs for this date"
+                              >
+                                {deleteDateLogsMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                               </button>
                             </div>
                           </div>
