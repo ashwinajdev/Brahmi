@@ -157,7 +157,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
               }}
               title="Refresh Page"
               aria-label="Refresh page data"
-              className="p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-colors cursor-pointer flex items-center justify-center animate-none"
+              className="w-8 h-8 mr-1 text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 border border-sky-100 dark:border-sky-900/60 hover:bg-sky-600 hover:text-white hover:border-sky-600 rounded-full shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center justify-center animate-none"
             >
               <RotateCw id="mobile-refresh-btn" className="w-4 h-4" />
             </button>
