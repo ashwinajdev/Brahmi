@@ -706,20 +706,20 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
                                   }`}
                                 />
                               </button>
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  handleDeleteDateLogs(group);
-                                }}
-                                disabled={deleteDateLogsMutation.isPending}
-                                className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors cursor-pointer"
-                                aria-label={`Delete all logs for ${formatDate(group.dateRaw)}`}
-                                title="Delete all logs for this date"
-                              >
-                                {deleteDateLogsMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                              </button>
                             </div>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleDeleteDateLogs(group);
+                              }}
+                              disabled={deleteDateLogsMutation.isPending}
+                              className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors cursor-pointer"
+                              aria-label={`Delete all logs for ${formatDate(group.dateRaw)}`}
+                              title="Delete all logs for this date"
+                            >
+                              {deleteDateLogsMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                            </button>
                           </div>
 
                           {!isCollapsed && (
