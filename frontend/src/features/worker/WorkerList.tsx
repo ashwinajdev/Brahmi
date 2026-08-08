@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import CustomSelect from '../../components/ui/CustomSelect.tsx';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api.ts';
@@ -44,7 +44,17 @@ const WhatsAppIcon = ({ className = 'w-4 h-4' }: { className?: string }) => (
   <img src="/whatsapp.png" alt="WhatsApp" className={`${className} object-contain`} />
 );
 
-export default function WorkerList() {
+interface WorkerListProps {
+  initialHistoryWorkerId?: string | null;
+  onSelectWorker?: (workerId: string) => void;
+  onClearHistorySelection?: () => void;
+}
+
+export default function WorkerList({
+  initialHistoryWorkerId = null,
+  onSelectWorker,
+  onClearHistorySelection,
+}: WorkerListProps) {
   const queryClient = useQueryClient();
   const { addToast, showConfirm } = useAppStore();
 
@@ -75,6 +85,22 @@ export default function WorkerList() {
   const [role, setRole] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [isActive, setIsActive] = useState(true);
+
+  // Keep worker details in browser history so the phone back gesture returns to the list.
+  useEffect(() => {
+    setHistoryWorkerId(initialHistoryWorkerId);
+  }, [initialHistoryWorkerId]);
+
+  const handleClearWorkerHistory = () => {
+    setDateFilterType('all');
+    setCustomFromDate('');
+    setCustomToDate('');
+    if (onClearHistorySelection) {
+      onClearHistorySelection();
+    } else {
+      setHistoryWorkerId(null);
+    }
+  };
 
   // Query: Get Workers
   const { data: workers = [], isLoading, isError, error } = useQuery<Worker[]>({
@@ -252,7 +278,7 @@ export default function WorkerList() {
       queryClient.invalidateQueries({ queryKey: ['completedWorks'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       addToast('Worker deleted successfully', 'success');
-      setHistoryWorkerId(null);
+      handleClearWorkerHistory();
     },
     onError: (err: any) => {
       addToast(err.message || 'Failed to delete worker', 'error');
@@ -548,10 +574,7 @@ export default function WorkerList() {
         <div className="flex items-center justify-between">
           <button
             onClick={() => {
-              setHistoryWorkerId(null);
-              setDateFilterType('all');
-              setCustomFromDate('');
-              setCustomToDate('');
+              handleClearWorkerHistory();
             }}
             className="flex items-center gap-1.5 text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline cursor-pointer select-none whitespace-nowrap shrink-0"
           >
@@ -989,7 +1012,13 @@ export default function WorkerList() {
           {sortedWorkers.map((worker) => (
             <div
               key={worker.id}
-              onClick={() => setHistoryWorkerId(worker.id)}
+              onClick={() => {
+                if (onSelectWorker) {
+                  onSelectWorker(worker.id);
+                } else {
+                  setHistoryWorkerId(worker.id);
+                }
+              }}
               className={`cursor-pointer bg-white dark:bg-slate-900 border rounded-xl shadow-sm hover:shadow-md hover:border-sky-500/25 dark:hover:border-sky-500/15 p-3.5 relative overflow-hidden transition-all flex flex-col justify-between touch-active ${
                 worker.isActive
                   ? 'border-slate-200 dark:border-slate-800'

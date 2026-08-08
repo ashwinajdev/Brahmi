@@ -45,6 +45,7 @@ export default function App() {
   const { user, token, setAuth, isLoadingAuth, setLoadingAuth, initTheme } = useAppStore();
   const [currentHash, setCurrentHash] = useState(window.location.hash || '#dashboard');
   const [selectedWorkId, setSelectedWorkId] = useState<string | null>(null);
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
 
   // Initialize theme
   useEffect(() => {
@@ -59,6 +60,7 @@ export default function App() {
       if (hash.startsWith('#works/')) {
         const id = hash.split('#works/')[1];
         setSelectedWorkId(id);
+        setSelectedWorkerId(null);
         setCurrentHash('#works');
         return;
       }
@@ -66,11 +68,21 @@ export default function App() {
       if (hash.startsWith('#history/')) {
         const id = hash.split('#history/')[1];
         setSelectedWorkId(id);
+        setSelectedWorkerId(null);
         setCurrentHash('#history');
         return;
       }
 
+      if (hash.startsWith('#workers/')) {
+        const id = hash.split('#workers/')[1];
+        setSelectedWorkId(null);
+        setSelectedWorkerId(id);
+        setCurrentHash('#workers');
+        return;
+      }
+
       setSelectedWorkId(null);
+      setSelectedWorkerId(null);
       setCurrentHash(hash);
     };
 
@@ -121,6 +133,14 @@ export default function App() {
 
   const handleClearSelection = () => {
     window.location.hash = '#works';
+  };
+
+  const handleSelectWorker = (workerId: string) => {
+    window.location.hash = `#workers/${workerId}`;
+  };
+
+  const handleClearWorkerSelection = () => {
+    window.location.hash = '#workers';
   };
 
   // 1. Loading State
@@ -203,7 +223,11 @@ export default function App() {
       activeTab = 'workers';
       pageContent = (
         <Suspense fallback={<PageLoader />}>
-          <WorkerList />
+          <WorkerList
+            initialHistoryWorkerId={selectedWorkerId}
+            onSelectWorker={handleSelectWorker}
+            onClearHistorySelection={handleClearWorkerSelection}
+          />
         </Suspense>
       );
       break;
