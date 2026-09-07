@@ -9,6 +9,7 @@ const router = Router();
 
 const workerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
+  nameKn: z.string().optional(),
   phone: z.string().regex(/^\d{10}$/, 'Phone number must be exactly 10 digits'),
   alternatePhone: z
     .string()
@@ -61,7 +62,7 @@ router.get('/', authMiddleware, async (req: AuthenticatedRequest, res: Response)
     }
 
     const workers = await Worker.find(filter)
-      .select('name phone alternatePhone email role avatarUrl isActive createdAt updatedAt')
+      .select('name nameKn phone alternatePhone email role avatarUrl isActive createdAt updatedAt')
       .sort({ name: 1 })
       .lean();
 
@@ -136,7 +137,7 @@ router.get('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Respon
     const assignments = await WorkAssignment.find({ workerId: id })
       .populate({
         path: 'workId',
-        select: 'title description category priority status dueDate location createdAt updatedAt',
+        select: 'title titleKn description descriptionKn category priority status dueDate location createdAt updatedAt',
       })
       .sort({ assignedAt: -1 })
       .lean();
@@ -153,7 +154,9 @@ router.get('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Respon
         ? {
             id: a.workId._id?.toString(),
             title: a.workId.title,
+            titleKn: a.workId.titleKn,
             description: a.workId.description,
+            descriptionKn: a.workId.descriptionKn,
             category: a.workId.category,
             priority: a.workId.priority,
             status: a.workId.status,
@@ -189,6 +192,7 @@ router.post('/', authMiddleware, async (req: AuthenticatedRequest, res: Response
 
     const worker = new Worker({
       name: data.name,
+      nameKn: data.nameKn || '',
       phone: data.phone,
       alternatePhone: data.alternatePhone || null,
       email: data.email,

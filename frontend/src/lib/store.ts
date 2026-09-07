@@ -1,4 +1,12 @@
 import { create } from 'zustand';
+import type { Language } from './i18n.ts';
+
+const SUPPORTED_LANGUAGES: readonly Language[] = ['en', 'kn'];
+
+function getStoredLanguage(): Language {
+  const storedLanguage = localStorage.getItem('brahmi_language');
+  return SUPPORTED_LANGUAGES.includes(storedLanguage as Language) ? (storedLanguage as Language) : 'en';
+}
 
 export interface User {
   id: string;
@@ -26,6 +34,7 @@ interface AppState {
   user: User | null;
   token: string | null;
   theme: 'light' | 'dark';
+  language: Language;
   toasts: Toast[];
   confirmDialog: ConfirmOptions | null;
   isLoadingAuth: boolean;
@@ -35,6 +44,7 @@ interface AppState {
   logout: () => void;
   toggleTheme: () => void;
   initTheme: () => void;
+  setLanguage: (lang: Language) => void;
   addToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   removeToast: (id: string) => void;
   showConfirm: (options: ConfirmOptions) => void;
@@ -46,6 +56,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   user: null,
   token: localStorage.getItem('brahmi_auth_token'),
   theme: 'light',
+  language: getStoredLanguage(),
   toasts: [],
   confirmDialog: null,
   isLoadingAuth: true,
@@ -73,6 +84,12 @@ export const useAppStore = create<AppState>()((set, get) => ({
     localStorage.removeItem('brahmi_theme');
     document.documentElement.classList.remove('dark');
     set({ theme: 'light' });
+  },
+
+  setLanguage: (lang: Language) => {
+    const nextLanguage = SUPPORTED_LANGUAGES.includes(lang) ? lang : 'en';
+    localStorage.setItem('brahmi_language', nextLanguage);
+    set({ language: nextLanguage });
   },
 
   addToast: (message: string, type: 'success' | 'error' | 'info' = 'success') => {

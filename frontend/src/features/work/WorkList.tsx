@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo, memo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api.ts';
 import { useAppStore } from '../../lib/store.ts';
-import { formatDate } from '../../lib/utils.ts';
+import { formatDate, pickWorkerName, pickWorkTitle } from '../../lib/utils.ts';
+import { t, type Language } from '../../lib/i18n.ts';
 import WorkFormModal from './WorkFormModal.tsx';
 import CustomSelect from '../../components/ui/CustomSelect.tsx';
 import {
@@ -24,6 +25,7 @@ import {
 interface Worker {
   id: string;
   name: string;
+  nameKn: string;
   avatarUrl: string | null;
   role: string;
   isActive: boolean;
@@ -32,7 +34,9 @@ interface Worker {
 interface Work {
   id: string;
   title: string;
+  titleKn: string;
   description: string;
+  descriptionKn: string;
   category: string;
   priority: 'low' | 'medium' | 'high';
   status: 'pending' | 'in_progress' | 'completed';
@@ -62,7 +66,7 @@ interface WorkListProps {
 
 export default function WorkList({ initialSelectedWorkId = null, onClearSelection }: WorkListProps) {
   const queryClient = useQueryClient();
-  const { addToast, showConfirm } = useAppStore();
+  const { addToast, showConfirm, language } = useAppStore();
 
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
   const [activeMobileTab, setActiveMobileTab] = useState<'today' | 'tomorrow' | 'upcoming'>('today');
@@ -209,18 +213,18 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
 
   const handleCompleteWork = (id: string) => {
     showConfirm({
-      title: 'Complete Task?',
-      message: 'Are you sure you want to mark this task as completed? It will be moved to the history tab.',
-      confirmText: 'Complete',
+      title: t(language, 'completeTaskTitle'),
+      message: t(language, 'completeTaskMessage'),
+      confirmText: t(language, 'completeAction'),
       onConfirm: () => completeWorkMutation.mutate(id),
     });
   };
 
   const handleDeleteWork = (id: string) => {
     showConfirm({
-      title: 'Delete Task?',
-      message: 'Are you sure you want to permanently delete this task and all its worker assignments? This action cannot be undone.',
-      confirmText: 'Delete',
+      title: t(language, 'deleteTaskTitle'),
+      message: t(language, 'deleteTaskMessage'),
+      confirmText: t(language, 'delete'),
       isDestructive: true,
       onConfirm: () => deleteWorkMutation.mutate(id),
     });
@@ -251,7 +255,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                placeholder="Search by title, location..."
+                placeholder={t(language, 'searchByTitle')}
               />
             </div>
 
@@ -259,7 +263,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
               onClick={openAddModal}
               className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-sky-600 text-white rounded-lg text-xs font-semibold cursor-pointer shadow-md hover:bg-sky-700 transition-colors select-none whitespace-nowrap shrink-0"
             >
-              <Plus className="w-3.5 h-3.5" /> Add Work
+              <Plus className="w-3.5 h-3.5" /> {t(language, 'addWork')}
             </button>
           </div>
 
@@ -302,9 +306,9 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
       ) : isError ? (
         <div className="flex flex-col items-center justify-center py-12 text-center p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
           <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">Failed to load Work Tasks</h3>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t(language, 'failedToLoadWorkTasks')}</h3>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            {error instanceof Error ? error.message : 'Please check your connection and try again.'}
+            {error instanceof Error ? error.message : t(language, 'connectionError')}
           </p>
         </div>
       ) : viewMode === 'kanban' ? (
@@ -339,17 +343,17 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                 return diffDays >= 2;
               }).length;
 
-              let tabLabel = 'Today';
+              let tabLabel = t(language, 'todayTab');
               let activeTextClass = 'text-sky-600 dark:text-sky-400';
               let activeBgClass = 'bg-white dark:bg-slate-900 shadow-sm';
               let dotColor = 'bg-sky-500';
 
               if (tab === 'tomorrow') {
-                tabLabel = 'Tomorrow';
+                tabLabel = t(language, 'tomorrowTab');
                 activeTextClass = 'text-blue-600 dark:text-blue-400';
                 dotColor = 'bg-blue-500';
               } else if (tab === 'upcoming') {
-                tabLabel = 'Upcoming';
+                tabLabel = t(language, 'upcomingTab');
                 activeTextClass = 'text-green-600 dark:text-green-400';
                 dotColor = 'bg-emerald-500';
               }
@@ -415,13 +419,13 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                 return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
               });
               
-              let statusTitle = 'Today';
+              let statusTitle = t(language, 'todayTab');
               let columnDotColor = 'bg-sky-500';
               if (columnGroup === 'tomorrow') {
-                statusTitle = 'Tomorrow';
+                statusTitle = t(language, 'tomorrowTab');
                 columnDotColor = 'bg-blue-500';
               } else if (columnGroup === 'upcoming') {
-                statusTitle = 'Upcoming';
+                statusTitle = t(language, 'upcomingTab');
                 columnDotColor = 'bg-emerald-500';
               }
 
@@ -445,13 +449,14 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                   <div className="flex-grow overflow-y-auto space-y-4 pr-1">
                     {sortedTasks.length === 0 ? (
                       <div className="py-12 text-center text-xs text-slate-400 border border-dashed border-slate-300 dark:border-slate-800 rounded-xl bg-white/20 dark:bg-slate-950/20">
-                        No tasks in this section
+                        {t(language, 'noTasksInSection')}
                       </div>
                     ) : (
                       sortedTasks.map((work) => (
                         <WorkCard
                           key={work.id}
                           work={work}
+                          language={language}
                           onClick={() => {
                             window.location.hash = `#works/${work.id}`;
                           }}
@@ -471,17 +476,17 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
             <table className="w-full text-left border-collapse text-xs md:text-sm">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-semibold bg-slate-50 dark:bg-slate-900/40 select-none">
-                  <th className="p-4 bg-slate-50 dark:bg-slate-900/40 rounded-tl-2xl">Work Place</th>
-                  <th className="p-4 bg-slate-50 dark:bg-slate-900/40">Date</th>
-                  <th className="p-4 bg-slate-50 dark:bg-slate-900/40">Assigned Workers</th>
-                  <th className="p-4 text-right bg-slate-50 dark:bg-slate-900/40 rounded-tr-2xl">Actions</th>
+                  <th className="p-4 bg-slate-50 dark:bg-slate-900/40 rounded-tl-2xl">{t(language, 'workPlace')}</th>
+                  <th className="p-4 bg-slate-50 dark:bg-slate-900/40">{t(language, 'date')}</th>
+                  <th className="p-4 bg-slate-50 dark:bg-slate-900/40">{t(language, 'assignedWorkers')}</th>
+                  <th className="p-4 text-right bg-slate-50 dark:bg-slate-900/40 rounded-tr-2xl">{t(language, 'status')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                 {activeWorksOnly.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="p-8 text-center text-slate-400">
-                      No work tasks registered or matching search filters.
+                      {t(language, 'noWork')}
                     </td>
                   </tr>
                 ) : (
@@ -514,11 +519,11 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                         <td className="p-4 max-w-xs">
                           <div className="flex items-center gap-2 truncate">
                             <p className="font-bold text-slate-800 dark:text-slate-200 hover:text-sky-500 transition-colors truncate">
-                              {work.title}
+                              {pickWorkTitle(language, work)}
                             </p>
                             {isOverdue && (
                               <span className="shrink-0 text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-950/40 text-red-500 border border-red-200 dark:border-red-900/50">
-                                Overdue
+                                {t(language, 'overdue')}
                               </span>
                             )}
                           </div>
@@ -530,7 +535,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                           </span>
                         </td>
                         <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                          <AvatarStack workers={work.assignedWorkers} />
+                          <AvatarStack workers={work.assignedWorkers} language={language} />
                         </td>
                         <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1">
@@ -586,7 +591,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
             {/* Header */}
             <div className="h-14 flex items-center justify-between px-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Briefcase className="w-4 h-4 text-sky-500" /> Work details
+                <Briefcase className="w-4 h-4 text-sky-500" /> {t(language, 'workDetails')}
               </span>
               <button
                 onClick={() => {
@@ -611,7 +616,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                   <div className="space-y-3.5">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase badge-${workDetails.status}`}>
-                        {workDetails.status.replace('_', ' ')}
+                        {t(language, workDetails.status === 'in_progress' ? 'inProgress' : workDetails.status)}
                       </span>
                       {/* Date indicator */}
                       <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-semibold bg-slate-50 dark:bg-slate-900/40 px-3 py-1.5 rounded-xl border border-slate-100 dark:border-slate-800/60 shrink-0">
@@ -621,7 +626,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                     </div>
 
                     <h2 className="text-base font-display font-extrabold text-slate-900 dark:text-white leading-snug">
-                      {workDetails.title}
+                      {pickWorkTitle(language, workDetails)}
                     </h2>
 
                     {/* Actions Section */}
@@ -631,20 +636,20 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                           onClick={() => handleCompleteWork(workDetails.id)}
                           className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition-all cursor-pointer select-none shadow-sm"
                         >
-                          <Check className="w-3.5 h-3.5" /> Complete Task
+                          <Check className="w-3.5 h-3.5" /> {t(language, 'completeTask')}
                         </button>
                         <button
                           onClick={() => openEditModal(workDetails)}
                           className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-semibold transition-colors cursor-pointer select-none text-slate-600 dark:text-slate-300"
                         >
-                          <Edit2 className="w-3.5 h-3.5" /> Edit details
+                          <Edit2 className="w-3.5 h-3.5" /> {t(language, 'editDetails')}
                         </button>
                       </div>
                       <button
                         onClick={() => handleDeleteWork(workDetails.id)}
                         className="w-full flex items-center justify-center gap-1.5 px-4 py-1.5 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl text-[11px] font-semibold transition-all cursor-pointer select-none"
                       >
-                        <Trash2 className="w-3 h-3" /> Delete Task (Permanently)
+                        <Trash2 className="w-3 h-3" /> {t(language, 'deleteTaskPermanently')}
                       </button>
                     </div>
                   </div>
@@ -656,15 +661,15 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                   <div className="bg-slate-50/50 dark:bg-slate-900/20 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/40 space-y-4">
                     <div>
                       <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                        <UserPlus className="w-4 h-4 text-sky-500" /> Assign Workers
+                        <UserPlus className="w-4 h-4 text-sky-500" /> {t(language, 'assignWorkers')}
                       </h3>
-                      <p className="text-[10px] text-slate-400 mt-0.5">Select and assign multiple workers as needed</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">{t(language, 'assignWorkersDesc')}</p>
                     </div>
 
                     {/* Dropdown Selector */}
                     <div>
                       <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-                        Select Staff Member
+                        {t(language, 'selectStaffMember')}
                       </span>
                       <div className="relative">
                         <button
@@ -678,7 +683,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                           }}
                           className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 text-left text-xs font-semibold flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-all cursor-pointer select-none"
                         >
-                          <span>Select worker...</span>
+                          <span>{t(language, 'selectWorkerPlaceholder')}</span>
                           <Plus className="w-4 h-4 text-slate-400" />
                         </button>
                       </div>
@@ -688,7 +693,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                          Currently Assigned ({Array.from(new Set(localAssignments.map(a => a.workerId))).length})
+                          {t(language, 'currentlyAssigned')} ({Array.from(new Set(localAssignments.map(a => a.workerId))).length})
                         </span>
                         <div className="flex items-center gap-2">
                           {/* Edit Assigned Workers Details */}
@@ -712,7 +717,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                               }}
                               className="text-[10px] font-bold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 cursor-pointer select-none"
                             >
-                              {isEditingAssignmentDetails ? 'Cancel' : 'Edit'}
+                              {isEditingAssignmentDetails ? t(language, 'cancel') : t(language, 'edit')}
                             </button>
                           )}
 
@@ -741,14 +746,14 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                               }}
                               className="text-[10px] font-bold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 cursor-pointer select-none"
                             >
-                              {isEditingAssignments ? 'Cancel' : 'Remove'}
+                              {isEditingAssignments ? t(language, 'cancel') : t(language, 'remove')}
                             </button>
                           )}
                         </div>
                       </div>
                       {localAssignments.length === 0 ? (
                         <p className="text-xs italic text-slate-400 py-3 bg-white dark:bg-slate-950 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-center select-none">
-                          No staff assigned yet.
+                          {t(language, 'noStaffAssigned')}
                         </p>
                       ) : (
                         <div className="flex flex-col gap-2">
@@ -783,12 +788,12 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                                 >
                                   <div className="flex items-center gap-2.5">
                                     <img
-                                      src={worker.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(worker.name)}`}
-                                      alt={worker.name}
+                                      src={worker.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(pickWorkerName(language, worker))}`}
+                                      alt={pickWorkerName(language, worker)}
                                       className="w-7 h-7 rounded-full object-cover border border-sky-500/20"
                                     />
                                     <div className="text-left">
-                                      <p className="font-bold text-slate-800 dark:text-slate-200">{worker.name}</p>
+                                      <p className="font-bold text-slate-800 dark:text-slate-200">{pickWorkerName(language, worker)}</p>
                                       <p className="text-[10px] text-slate-455 mt-0.5 flex items-center gap-3">
                                         <span>
                                           Shift: <span className="font-extrabold text-sky-600 dark:text-sky-400">{assign.shifts.join(' & ')}</span>
@@ -849,7 +854,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                     {syncAssignmentsMutation.isPending && (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     )}
-                    Save Work
+                    {t(language, 'saveWork')}
                   </button>
                 </div>
               </>
@@ -873,28 +878,28 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
             </button>
 
             <h3 className="text-md font-display font-extrabold text-slate-900 dark:text-white mb-6">
-              {isEditingSelectedAssignment ? 'Edit Staff Assignment' : 'Assign Staff Member'}
+              {isEditingSelectedAssignment ? t(language, 'editStaffAssignment') : t(language, 'assignStaffMember')}
             </h3>
 
             <div className="space-y-4">
               {/* Select Worker */}
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  Select Staff
+                  {t(language, 'selectStaffMember')}
                 </label>
                 {isEditingSelectedAssignment ? (
                   <div className="w-full px-3 py-2.5 rounded-xl border border-slate-250 dark:border-slate-800 bg-slate-100 dark:bg-slate-850 text-slate-855 dark:text-white text-sm font-bold select-none">
-                    {roster.find((w) => w.id === selectedWorkerIdForAssign)?.name || 'Unknown Staff'}
+                    {pickWorkerName(language, roster.find((w) => w.id === selectedWorkerIdForAssign) as any) || 'Unknown Staff'}
                   </div>
                 ) : (
                   <CustomSelect
                     value={selectedWorkerIdForAssign}
                     onChange={setSelectedWorkerIdForAssign}
                     options={[
-                      { value: '', label: '-- Choose Worker --' },
-                      ...roster.map((worker) => ({ value: worker.id, label: worker.name })),
+                      { value: '', label: t(language, 'chooseWorker') },
+                      ...roster.map((worker) => ({ value: worker.id, label: pickWorkerName(language, worker) })),
                     ]}
-                    placeholder="-- Choose Worker --"
+                    placeholder={t(language, 'chooseWorker')}
                   />
                 )}
               </div>
@@ -902,7 +907,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
               {/* Select Shift */}
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  Select Shift (Multi-select)
+                  {t(language, 'selectShiftMulti')}
                 </label>
                 <div className="flex gap-3">
                   {['Tiffin', 'Lunch', 'Dinner'].map((s) => {
@@ -941,7 +946,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
               {/* Predefined Amount */}
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                  Amount allocation (₹)
+                  {t(language, 'amountAllocation')}
                 </label>
                 <input
                   type="number"
@@ -962,7 +967,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                   }}
                   className="px-4 py-2 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-700 dark:text-slate-350 rounded-xl text-xs font-bold transition-all cursor-pointer"
                 >
-                  Cancel
+                  {t(language, 'cancel')}
                 </button>
                 <button
                   type="button"
@@ -1023,7 +1028,7 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
                   }}
                   className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow"
                 >
-                  {isEditingSelectedAssignment ? 'Confirm Edit' : 'Confirm Assign'}
+                  {isEditingSelectedAssignment ? t(language, 'confirmEdit') : t(language, 'confirmAssign')}
                 </button>
               </div>
             </div>
@@ -1037,10 +1042,11 @@ export default function WorkList({ initialSelectedWorkId = null, onClearSelectio
 /* Internal Card Component for Kanban Columns */
 interface WorkCardProps {
   work: Work;
+  language: Language;
   onClick: () => void;
 }
 
-const WorkCard = memo(function WorkCard({ work, onClick }: WorkCardProps) {
+const WorkCard = memo(function WorkCard({ work, language, onClick }: WorkCardProps) {
   // Prevent click propagation when clicking stack
   const stopProp = (e: React.MouseEvent) => e.stopPropagation();
 
@@ -1071,11 +1077,11 @@ const WorkCard = memo(function WorkCard({ work, onClick }: WorkCardProps) {
     >
       <div className="flex items-start justify-between gap-3">
         <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors leading-normal line-clamp-2">
-          {work.title}
+          {pickWorkTitle(language, work)}
         </h4>
         {isOverdue && (
           <span className="shrink-0 text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-red-50 dark:bg-red-950/40 text-red-500 border border-red-200 dark:border-red-900/50">
-            Overdue
+            {t(language, 'overdue')}
           </span>
         )}
       </div>
@@ -1088,7 +1094,7 @@ const WorkCard = memo(function WorkCard({ work, onClick }: WorkCardProps) {
         </span>
         
         <div className="flex items-center gap-2.5" onClick={stopProp}>
-          <AvatarStack workers={work.assignedWorkers} />
+          <AvatarStack workers={work.assignedWorkers} language={language} />
         </div>
       </div>
     </div>
@@ -1098,11 +1104,12 @@ const WorkCard = memo(function WorkCard({ work, onClick }: WorkCardProps) {
 /* Avatar Stack Display Helper */
 interface AvatarStackProps {
   workers: Worker[];
+  language: Language;
 }
 
-const AvatarStack = memo(function AvatarStack({ workers }: AvatarStackProps) {
+const AvatarStack = memo(function AvatarStack({ workers, language }: AvatarStackProps) {
   if (!workers || workers.length === 0) {
-    return <span className="text-[10px] italic text-slate-400">Unassigned</span>;
+    return <span className="text-[10px] italic text-slate-400">{t(language, 'unassigned')}</span>;
   }
 
   // Deduplicate workers by id (a worker assigned to multiple shifts appears once)
@@ -1118,9 +1125,9 @@ const AvatarStack = memo(function AvatarStack({ workers }: AvatarStackProps) {
         <img
           key={worker.id}
           className="inline-block h-6 w-6 rounded-full ring-2 ring-white dark:ring-slate-950 object-cover"
-          src={worker.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(worker.name)}`}
-          alt={worker.name}
-          title={`${worker.name} (${worker.role})`}
+          src={worker.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(pickWorkerName(language, worker))}`}
+          alt={pickWorkerName(language, worker)}
+          title={`${pickWorkerName(language, worker)} (${worker.role})`}
           loading="lazy"
           decoding="async"
         />

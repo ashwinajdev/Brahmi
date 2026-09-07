@@ -2,7 +2,8 @@ import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api.ts';
 import { useAppStore } from '../../lib/store.ts';
-import { formatDate } from '../../lib/utils.ts';
+import { formatDate, pickAssignmentWorkerName, pickWorkerName, pickWorkTitle, pickWorkDescription } from '../../lib/utils.ts';
+import { t } from '../../lib/i18n.ts';
 import { 
   Search, 
   Briefcase, 
@@ -24,6 +25,7 @@ import CustomSelect from '../../components/ui/CustomSelect.tsx';
 interface Worker {
   id: string;
   name: string;
+  nameKn: string;
   avatarUrl: string | null;
   role: string;
   isActive: boolean;
@@ -32,7 +34,9 @@ interface Worker {
 interface Work {
   id: string;
   title: string;
+  titleKn: string;
   description: string;
+  descriptionKn: string;
   category: string;
   priority: 'low' | 'medium' | 'high';
   status: 'pending' | 'in_progress' | 'completed';
@@ -46,6 +50,7 @@ interface AssignmentLog {
   workId: string;
   workerId: string;
   workerName: string;
+  workerNameKn?: string | null;
   workerAvatarUrl: string | null;
   assignedAt: string;
   unassignedAt: string | null;
@@ -77,7 +82,7 @@ const AMOUNT_PER_WORKER = 500;
 
 export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistoryProps) {
   const queryClient = useQueryClient();
-  const { addToast, showConfirm } = useAppStore();
+  const { addToast, showConfirm, language } = useAppStore();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedWorkId, setSelectedWorkId] = useState<string | null>(initialSelectedWorkId);
@@ -318,6 +323,35 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
     },
   });
 
+  const deleteWorkMutation = useMutation({
+    mutationFn: (workId: string) => api.delete(`/works/${workId}`),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['completedWorks'] });
+      queryClient.invalidateQueries({ queryKey: ['works'] });
+      queryClient.invalidateQueries({ queryKey: ['worker-history'] });
+      queryClient.invalidateQueries({ queryKey: ['workers'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      addToast('Work task deleted successfully', 'success');
+      setSelectedWorkId(null);
+      window.location.hash = '#history';
+    },
+    onError: (err: any) => {
+      addToast(err.message || 'Failed to delete work task', 'error');
+    },
+  });
+
+  const handleDeleteWork = () => {
+    if (!selectedWorkDetails) return;
+
+    showConfirm({
+      title: t(language, 'deleteTaskTitle'),
+      message: t(language, 'deleteTaskMessage'),
+      confirmText: t(language, 'delete'),
+      isDestructive: true,
+      onConfirm: () => deleteWorkMutation.mutate(selectedWorkDetails.id),
+    });
+  };
+
   const handleDeleteDateLogs = (group: { dateRaw: string; items: any[] }) => {
     const assignmentIds = [...new Set(group.items.flatMap((item) =>
       item.originalHistoryItems.map((assignment: any) => assignment.id)
@@ -492,19 +526,19 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
       case 'high':
         return (
           <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase bg-red-500/10 text-red-600 rounded-md border border-red-500/20">
-            High
+            {t(language, 'high')}
           </span>
         );
       case 'medium':
         return (
           <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase bg-blue-500/10 text-blue-600 rounded-md border border-blue-500/20">
-            Medium
+            {t(language, 'medium')}
           </span>
         );
       default:
         return (
           <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase bg-slate-100 text-slate-500 rounded-md border border-slate-200">
-            Low
+            {t(language, 'low')}
           </span>
         );
     }
@@ -527,14 +561,14 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
             }}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
           >
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to History
+            <ArrowLeft className="w-3.5 h-3.5" /> {t(language, 'backToHistory')}
           </button>
         </div>
 
         {isLoadingDetails || !workDetails ? (
           <div className="flex flex-col items-center justify-center py-20 text-slate-400">
             <Loader2 className="w-8 h-8 animate-spin text-sky-500 mb-2" />
-            <span className="text-xs font-semibold">Loading task log files...</span>
+            <span className="text-xs font-semibold">{t(language, 'loadingTaskLogs')}</span>
           </div>
         ) : (
           <div className="space-y-6 animate-fade-in">
@@ -548,16 +582,37 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
                   </span>
                 )}
               </div>
-              <h3 className="font-extrabold text-slate-900 text-lg leading-snug tracking-tight">
-                {workDetails.title}
-              </h3>
-              {workDetails.description && 
-               workDetails.description !== 'General Task Details' && 
-               workDetails.description !== 'No description provided.' && (
-                <p className="text-xs text-slate-500 leading-relaxed max-w-2xl">
-                  {workDetails.description}
-                </p>
-              )}
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="font-extrabold text-slate-900 text-lg leading-snug tracking-tight">
+                  {pickWorkTitle(language, workDetails)}
+                </h3>
+                <button
+                  type="button"
+                  onClick={handleDeleteWork}
+                  disabled={deleteWorkMutation.isPending}
+                  aria-label={t(language, 'deleteTaskPermanently')}
+                  title={t(language, 'deleteTaskPermanently')}
+                  className="shrink-0 p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deleteWorkMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+              {(() => {
+                const description = pickWorkDescription(language, workDetails);
+                const englishDescription = workDetails.description || '';
+                if (!description || englishDescription === 'General Task Details' || englishDescription === 'No description provided.') {
+                  return null;
+                }
+                return (
+                  <p className="text-xs text-slate-500 leading-relaxed max-w-2xl">
+                    {description}
+                  </p>
+                );
+              })()}
               {(workDetails.location || (workDetails.category && workDetails.category !== 'General')) && (
                 <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-x-6 gap-y-1.5 text-[10px] text-slate-455 font-bold">
                   {workDetails.location && (
@@ -579,17 +634,17 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
             {/* Date Filters block */}
             <div className="flex flex-col gap-3 border-b border-slate-100 pb-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 select-none">Filter Logs By Date</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 select-none">{t(language, 'filterLogsByDate')}</h3>
                 <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
                   <CustomSelect
                     value={dateFilterType}
                     onChange={(v) => setDateFilterType(v as any)}
                     options={[
-                      { value: 'all', label: 'All Time' },
-                      { value: 'specific', label: 'Specific Date' },
-                      { value: 'this-month', label: 'This Month' },
-                      { value: 'last-month', label: 'Last Month' },
-                      { value: 'custom', label: 'Custom Range' },
+                      { value: 'all', label: t(language, 'allTime') },
+                      { value: 'specific', label: t(language, 'specificDate') },
+                      { value: 'this-month', label: t(language, 'thisMonth') },
+                      { value: 'last-month', label: t(language, 'lastMonth') },
+                      { value: 'custom', label: t(language, 'customRange') },
                     ]}
                     size="sm"
                     className="w-full sm:w-44"
@@ -599,7 +654,7 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
 
               {dateFilterType === 'specific' && (
                 <div className="flex flex-col gap-1 w-full max-w-[200px] animate-slide-up">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">Select Date</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">{t(language, 'selectDate')}</span>
                   <input
                     type="date"
                     value={specificDate}
@@ -612,7 +667,7 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
               {dateFilterType === 'custom' && (
                 <div className="flex flex-wrap gap-4 animate-slide-up">
                   <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">From Date</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">{t(language, 'fromDate')}</span>
                     <input
                       type="date"
                       value={customFromDate}
@@ -621,7 +676,7 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
                     />
                   </div>
                   <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">To Date</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">{t(language, 'toDate')}</span>
                     <input
                       type="date"
                       value={customToDate}
@@ -636,14 +691,14 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
             {/* Assignments list table card */}
             <div className="glass-panel rounded-2xl border border-slate-200 overflow-hidden bg-white">
               <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Work Logs History</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">{t(language, 'workLogsHistory')}</h3>
                 <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                   <button
                     type="button"
                     onClick={handleOpenAddLog}
                     className="px-3 py-1.5 bg-white hover:bg-sky-50 text-sky-600 rounded-lg text-[10px] font-extrabold shadow-sm transition-colors flex items-center gap-1 cursor-pointer border border-sky-200"
                   >
-                    <Plus className="w-3 h-3" /> Add Log
+                    <Plus className="w-3 h-3" /> {t(language, 'addLog')}
                   </button>
                   {groupedByDate.length > 0 && (
                   <div className="flex items-center">
@@ -653,13 +708,13 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
                           onClick={() => setIsDetailEditing(false)}
                           className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-extrabold transition-colors flex items-center gap-1 cursor-pointer border border-slate-200"
                         >
-                          <X className="w-3 h-3" /> Cancel
+                          <X className="w-3 h-3" /> {t(language, 'cancel')}
                         </button>
                         <button
                           onClick={handleSaveAllDetails}
                           className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-extrabold shadow transition-colors flex items-center gap-1 cursor-pointer"
                         >
-                          <Check className="w-3 h-3" /> Save All
+                          <Check className="w-3 h-3" /> {t(language, 'saveAll')}
                         </button>
                       </div>
                     ) : (
@@ -667,7 +722,7 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
                         onClick={handleStartDetailEdit}
                         className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-[10px] font-extrabold shadow transition-colors flex items-center gap-1 cursor-pointer"
                       >
-                        <Edit2 className="w-3 h-3" /> Edit Logs
+                        <Edit2 className="w-3 h-3" /> {t(language, 'editLogs')}
                       </button>
                     )}
                   </div>
@@ -678,7 +733,7 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
               <div className="p-4 space-y-6">
                 {groupedByDate.length === 0 ? (
                   <div className="text-xs italic text-slate-450 py-12 text-center border border-dashed border-slate-200 rounded-xl">
-                    No assignment records found matching the selected dates.
+                    {t(language, 'noAssignmentRecords')}
                   </div>
                 ) : (
                   <>
@@ -693,7 +748,7 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
                           >
                             <div className="flex items-center gap-2">
                               <span className="text-xs font-extrabold text-sky-600 bg-sky-50 px-2.5 py-1 rounded-lg">
-                                Date: {formatDate(group.dateRaw)}
+                                {t(language, 'date')}: {formatDate(group.dateRaw)}
                               </span>
                               <button
                                 type="button"
@@ -781,15 +836,15 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
                                           <CustomSelect
                                             value={edits.workerId}
                                             onChange={(val) => updateRowDetailField(item.id, 'workerId', val)}
-                                            options={roster.map((w: any) => ({ value: w.id, label: w.name }))}
-                                            placeholder="Select Staff"
+                                            options={roster.map((w: any) => ({ value: w.id, label: pickWorkerName(language, w) }))}
+                                            placeholder={t(language, 'selectStaffMember')}
                                             size="sm"
                                           />
                                         </div>
 
                                         {/* Right: Amount Selection */}
                                         <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto border-t md:border-t-0 pt-3 md:pt-0 border-slate-100 dark:border-slate-800/80">
-                                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-extrabold select-none md:hidden">Amount</span>
+                                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-extrabold select-none md:hidden">{t(language, 'amount')}</span>
                                           <div className="flex items-center gap-1">
                                             <span className="text-[11px] text-slate-400 font-extrabold select-none">₹</span>
                                             <button
@@ -832,10 +887,10 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
                                   <table className="w-full text-left border-collapse">
                                     <thead>
                                       <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 select-none">
-                                        <th className="py-2.5 px-2 w-10 text-center">SI No.</th>
-                                        <th className="py-2.5 px-2 w-20">Shift</th>
-                                        <th className="py-2.5 px-2 min-w-[120px]">Worker Name</th>
-                                        <th className="py-2.5 px-2 w-24 text-right">Amount</th>
+                                        <th className="py-2.5 px-2 w-10 text-center">{t(language, 'siNo')}</th>
+                                        <th className="py-2.5 px-2 w-20">{t(language, 'shiftLabel')}</th>
+                                        <th className="py-2.5 px-2 min-w-[120px]">{t(language, 'workerNameCol')}</th>
+                                        <th className="py-2.5 px-2 w-24 text-right">{t(language, 'amount')}</th>
                                       </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs font-semibold text-slate-700 dark:text-slate-300">
@@ -853,11 +908,11 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
                                           <td className="py-3 px-2">
                                             <div className="flex items-center gap-2">
                                               <img
-                                                src={item.workerAvatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(item.workerName)}`}
-                                                alt={item.workerName}
+                                                src={item.workerAvatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(pickAssignmentWorkerName(language, item as any))}`}
+                                                alt={pickAssignmentWorkerName(language, item as any)}
                                                 className="w-5 h-5 rounded-full object-cover border dark:border-slate-800"
                                               />
-                                              <span className="text-slate-800 dark:text-slate-200 font-extrabold truncate max-w-[110px]">{item.workerName}</span>
+                                              <span className="text-slate-800 dark:text-slate-200 font-extrabold truncate max-w-[110px]">{pickAssignmentWorkerName(language, item as any)}</span>
                                             </div>
                                           </td>
                                           <td className="py-3 px-2 text-right font-bold w-24 text-slate-900 dark:text-white">
@@ -872,8 +927,8 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
 
                               {/* Total allocation summary for this Date */}
                               <div className="flex justify-between items-center bg-slate-50/50 p-2.5 rounded-xl border border-slate-100/50 mt-2 text-xs font-bold text-slate-700">
-                                <span>Total Workers: {group.items.length}</span>
-                                <span>Total Pay: <span className="text-sky-600 text-sm font-extrabold">₹{group.totalAmount}</span></span>
+                                <span>{t(language, 'totalWorkersLabel')}: {group.items.length}</span>
+                                <span>{t(language, 'totalPay')}: <span className="text-sky-600 text-sm font-extrabold">₹{group.totalAmount}</span></span>
                               </div>
                             </>
                           )}
@@ -884,11 +939,11 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
                     {/* Grand Total of All Work Allocation */}
                     <div className="flex justify-between items-center bg-sky-600/10 p-4 rounded-2xl border border-sky-500/25 mt-4 text-xs font-bold text-slate-800">
                       <div className="flex flex-col text-left">
-                        <span className="text-purple-750 uppercase tracking-wider font-extrabold">Grand Total Pay</span>
-                        <span className="text-[10px] text-sky-400 uppercase font-bold tracking-wider mt-0.5">(All Dates)</span>
+                        <span className="text-purple-750 uppercase tracking-wider font-extrabold">{t(language, 'grandTotalPay')}</span>
+                        <span className="text-[10px] text-sky-400 uppercase font-bold tracking-wider mt-0.5">{t(language, 'allDates')}</span>
                       </div>
                       <div className="flex flex-col text-right">
-                        <span className="text-slate-450 text-[10px] uppercase font-extrabold tracking-wider">Total Pay</span>
+                        <span className="text-slate-450 text-[10px] uppercase font-extrabold tracking-wider">{t(language, 'totalPay')}</span>
                         <span className="text-sky-600 text-base font-black">₹{groupedByDate.reduce((sum, g) => sum + g.totalAmount, 0)}</span>
                       </div>
                     </div>
@@ -902,8 +957,8 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
                 <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl border border-slate-200 p-5 space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 id="add-work-log-title" className="text-base font-extrabold text-slate-800">Add Work Log</h3>
-                      <p className="text-xs text-slate-400 mt-0.5">Add a completed work record for today or any earlier date.</p>
+                      <h3 id="add-work-log-title" className="text-base font-extrabold text-slate-800">{t(language, 'addWorkLog')}</h3>
+                      <p className="text-xs text-slate-400 mt-0.5">{t(language, 'addWorkLogDesc')}</p>
                     </div>
                     <button type="button" onClick={() => setIsAddLogModalOpen(false)} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 cursor-pointer" aria-label="Close add work log dialog">
                       <X className="w-4 h-4" />
@@ -912,17 +967,17 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <label className="flex flex-col gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                      Date
+                      {t(language, 'date')}
                       <input type="date" max={getLocalDateInputValue()} value={newLog.date} onChange={(e) => setNewLog((prev) => ({ ...prev, date: e.target.value }))} className="px-3 py-2 rounded-lg border border-slate-200 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-sky-500" />
                     </label>
                     <label className="flex flex-col gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                    Total amount
+                    {t(language, 'totalAmountLabel')}
                       <input type="text" readOnly value={`₹${newLog.workerIds.length * AMOUNT_PER_WORKER}`} className="px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 cursor-default" />
                   </label>
                 </div>
 
                   <div className="flex flex-col gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                    Worker
+                    {t(language, 'selectWorkers')}
                     <div className="relative">
                       <button
                         type="button"
@@ -933,8 +988,8 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
                       >
                         <span className={newLog.workerIds.length ? 'truncate' : 'text-slate-400'}>
                           {newLog.workerIds.length
-                            ? roster.filter((worker: any) => newLog.workerIds.includes(worker.id)).map((worker: any) => formatWorkerName(worker.name)).join(', ')
-                            : 'Select workers'}
+                            ? roster.filter((worker: any) => newLog.workerIds.includes(worker.id)).map((worker: any) => formatWorkerName(pickWorkerName(language, worker))).join(', ')
+                            : t(language, 'selectWorkers')}
                         </span>
                         <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isWorkerPickerOpen ? 'rotate-180' : ''}`} />
                       </button>
@@ -957,7 +1012,7 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
                                 }))}
                                 className={`w-full min-h-10 px-3 py-2 rounded-lg flex items-center justify-between gap-3 text-left text-sm font-semibold transition-colors cursor-pointer ${isSelected ? 'bg-sky-50 text-sky-700' : 'text-slate-700 hover:bg-slate-50'}`}
                               >
-                                <span>{formatWorkerName(worker.name)}</span>
+                                <span>{formatWorkerName(pickWorkerName(language, worker as any))}</span>
                                 <span className={`w-4 h-4 shrink-0 rounded border flex items-center justify-center ${isSelected ? 'bg-sky-600 border-sky-600 text-white' : 'border-slate-300 bg-white'}`}>
                                   {isSelected && <Check className="w-3 h-3" />}
                                 </span>
@@ -967,11 +1022,11 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
                         </div>
                       )}
                     </div>
-                    <span className="normal-case tracking-normal text-[10px] font-medium text-slate-400">₹500 is added for each selected worker.</span>
+                    <span className="normal-case tracking-normal text-[10px] font-medium text-slate-400">{t(language, 'totalAmountLabel')}</span>
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Shift</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{t(language, 'shiftLabel')}</span>
                     <div className="flex gap-2">
                       {['Tiffin', 'Lunch', 'Dinner'].map((shift) => (
                         <button key={shift} type="button" onClick={() => setNewLog((prev) => ({ ...prev, shift }))} className={`flex-1 px-2 py-2 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${newLog.shift === shift ? 'bg-sky-600 border-sky-600 text-white' : 'bg-white border-slate-200 text-slate-500 hover:border-sky-300'}`}>
@@ -982,9 +1037,9 @@ export default function WorkHistory({ initialSelectedWorkId = null }: WorkHistor
                   </div>
 
                   <div className="flex justify-end gap-2 pt-1">
-                    <button type="button" onClick={() => setIsAddLogModalOpen(false)} className="px-3 py-2 rounded-lg text-xs font-extrabold text-slate-600 hover:bg-slate-100 cursor-pointer">Cancel</button>
+                    <button type="button" onClick={() => setIsAddLogModalOpen(false)} className="px-3 py-2 rounded-lg text-xs font-extrabold text-slate-600 hover:bg-slate-100 cursor-pointer">{t(language, 'cancel')}</button>
                     <button type="button" onClick={handleCreateWorkLog} disabled={createWorkHistoryLogMutation.isPending} className="px-3 py-2 rounded-lg text-xs font-extrabold text-white bg-sky-600 hover:bg-sky-700 disabled:opacity-60 cursor-pointer flex items-center gap-1.5">
-                      {createWorkHistoryLogMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add Log
+                      {createWorkHistoryLogMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} {t(language, 'addLog')}
                     </button>
                   </div>
                 </div>
@@ -1015,14 +1070,14 @@ const filteredWorks = sortedCompletedWorks;
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-850 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500"
-              placeholder="Search tasks..."
+              placeholder={t(language, 'searchByTitle')}
             />
           </div>
           <button
             onClick={() => setIsCreateModalOpen(true)}
             className="flex items-center justify-center gap-1.5 px-3 py-2 bg-sky-600 text-white rounded-xl text-xs font-semibold cursor-pointer shadow-md hover:bg-sky-700 transition-colors select-none whitespace-nowrap shrink-0"
           >
-            <Plus className="w-3.5 h-3.5" /> Add Work
+            <Plus className="w-3.5 h-3.5" /> {t(language, 'addWork')}
           </button>
         </div>
       </div>
@@ -1031,24 +1086,24 @@ const filteredWorks = sortedCompletedWorks;
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-20 text-slate-400">
           <Loader2 className="w-8 h-8 animate-spin text-sky-500 mb-2" />
-          <span className="text-xs font-semibold">Loading tasks...</span>
+          <span className="text-xs font-semibold">{t(language, 'loading')}</span>
         </div>
       ) : isError ? (
         <div className="flex flex-col items-center justify-center py-12 text-center p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
           <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">Failed to load history</h3>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t(language, 'failedToLoadHistory')}</h3>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            {error instanceof Error ? error.message : 'Please check your connection and try again.'}
+            {error instanceof Error ? error.message : t(language, 'connectionError')}
           </p>
         </div>
       ) : filteredWorks.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
           <Briefcase className="w-10 h-10 text-slate-350 dark:text-slate-500 mb-3" />
-          <h4 className="text-sm font-bold text-slate-900 dark:text-white">No Tasks Found</h4>
+          <h4 className="text-sm font-bold text-slate-900 dark:text-white">{t(language, 'noTasksFound')}</h4>
           <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
             {searchTerm 
-              ? 'Try refining your search terms.' 
-              : 'Tasks will appear here.'}
+              ? t(language, 'refineSearch') 
+              : t(language, 'tasksWillAppear')}
           </p>
         </div>
       ) : (
@@ -1066,22 +1121,22 @@ const filteredWorks = sortedCompletedWorks;
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase bg-sky-500/10 text-sky-600 dark:bg-sky-500/20 dark:text-sky-400 rounded-md border border-sky-500/20">
-                        {(work as any).occurrencesCount} Instances
+                        {(work as any).occurrencesCount} {t(language, 'instances')}
                       </span>
                       <span className="text-[9px] text-slate-400 font-semibold">
-                        Combined history from all occurrences
+                        {t(language, 'combinedHistoryFromOccurrences')}
                       </span>
                     </div>
                   </div>
                 )}
                 <h4 className="font-extrabold text-slate-900 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors text-sm md:text-base tracking-tight leading-snug text-left">
-                  {index + 1}. {work.title}
+                  {index + 1}. {language === 'kn' && work.titleKn ? work.titleKn : work.title}
                 </h4>
                 {work.description && 
                  work.description !== 'General Task Details' && 
                  work.description !== 'No description provided.' && (
                   <p className="text-xs text-slate-450 dark:text-slate-400 line-clamp-2 text-left">
-                    {work.description}
+                    {language === 'kn' && work.descriptionKn ? work.descriptionKn : work.description}
                   </p>
                 )}
               </div>

@@ -3,7 +3,8 @@ import CustomSelect from '../../components/ui/CustomSelect.tsx';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api.ts';
 import { useAppStore } from '../../lib/store.ts';
-import { formatDate } from '../../lib/utils.ts';
+import { t } from '../../lib/i18n.ts';
+import { formatDate, pickWorkerName, pickWorkTitle } from '../../lib/utils.ts';
 import {
   Users,
   Search,
@@ -22,6 +23,7 @@ import {
 interface Worker {
   id: string;
   name: string;
+  nameKn: string;
   phone: string;
   alternatePhone?: string | null;
   email: string;
@@ -56,7 +58,7 @@ export default function WorkerList({
   onClearHistorySelection,
 }: WorkerListProps) {
   const queryClient = useQueryClient();
-  const { addToast, showConfirm } = useAppStore();
+  const { addToast, showConfirm, language } = useAppStore();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all'); // all, active, inactive
@@ -79,6 +81,7 @@ export default function WorkerList({
 
   // Form State
   const [name, setName] = useState('');
+  const [nameKn, setNameKn] = useState('');
   const [phone, setPhone] = useState('');
   const [alternatePhone, setAlternatePhone] = useState('');
   const [email, setEmail] = useState('');
@@ -135,23 +138,22 @@ export default function WorkerList({
   const uniqueWorkTitles = useMemo(() => {
     const titles = new Set<string>();
     works.forEach((w: any) => {
-      if (w.title) titles.add(w.title);
+      const displayTitle = pickWorkTitle(language, w as any);
+      if (displayTitle) titles.add(displayTitle);
     });
-    // Add existing edited work titles to the options just in case
     Object.values(editedAssignments).forEach((edit: any) => {
       if (edit.workTitle) titles.add(edit.workTitle);
     });
-    // Add initial work titles from historyData as well
     const assignmentSource = historyData?.assignments ?? [
       ...(historyData?.activeAssignments ?? []),
       ...(historyData?.historicalAssignments ?? []),
     ];
     assignmentSource.forEach((a: any) => {
       if (a.workTitle) titles.add(a.workTitle);
-      if (a.work?.title) titles.add(a.work.title);
+      if (a.work) titles.add(pickWorkTitle(language, a.work));
     });
     return Array.from(titles).sort((a, b) => a.localeCompare(b));
-  }, [works, editedAssignments, historyData]);
+  }, [works, editedAssignments, historyData, language]);
 
   const filteredAssignments = useMemo(() => {
     const assignmentSource = historyData?.assignments ?? [
@@ -202,6 +204,7 @@ export default function WorkerList({
       assignedAt: string;
       workId: string;
       workTitle: string;
+      workTitleKn: string;
       shifts: string[];
       amount: number;
       originalAssignments: any[];
@@ -225,6 +228,7 @@ export default function WorkerList({
           assignedAt: assignment.assignedAt,
           workId: wId,
           workTitle: assignment.work.title,
+          workTitleKn: assignment.work.titleKn || '',
           shifts: [assignment.shift || 'Tiffin'],
           amount: fallbackAmt,
           originalAssignments: [assignment]
@@ -318,6 +322,7 @@ export default function WorkerList({
   const openEditModal = (worker: Worker) => {
     setEditingWorker(worker);
     setName(worker.name);
+    setNameKn(worker.nameKn || '');
     setPhone(worker.phone);
     setAlternatePhone(worker.alternatePhone || '');
     setEmail(worker.email);
@@ -330,6 +335,14 @@ export default function WorkerList({
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingWorker(null);
+    setName('');
+    setNameKn('');
+    setPhone('');
+    setAlternatePhone('');
+    setEmail('');
+    setRole('');
+    setAvatarUrl('');
+    setIsActive(true);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -370,6 +383,7 @@ export default function WorkerList({
 
     const payload = {
       name,
+      nameKn: nameKn || '',
       phone,
       alternatePhone: alternatePhone || null,
       email: finalEmail,
@@ -390,7 +404,7 @@ export default function WorkerList({
   const handleDeleteWorker = (worker: any) => {
     const activeTasks = worker.activeAssignments?.filter((a: any) => a.work?.status !== 'completed') || [];
     if (activeTasks.length > 0) {
-      const taskNames = activeTasks.map((t: any) => t.work?.title).join(', ');
+      const taskNames = activeTasks.map((t: any) => t.work ? pickWorkTitle(language, t.work) : t.work?.title).join(', ');
       addToast(
         `Cannot delete worker: Currently assigned to active tasks (${taskNames}). Please complete or unassign these tasks first.`,
         'error'
@@ -400,7 +414,7 @@ export default function WorkerList({
 
     showConfirm({
       title: 'Delete Worker Profile?',
-      message: `Are you sure you want to permanently delete ${worker.name}? All of their work history logs and assignments will be deleted permanently. This action cannot be undone.`,
+      message: `Are you sure you want to permanently delete ${pickWorkerName(language, worker)}? All of their work history logs and assignments will be deleted permanently. This action cannot be undone.`,
       confirmText: 'Delete Worker',
       isDestructive: true,
       onConfirm: () => deleteWorkerMutation.mutate(worker.id),
@@ -458,7 +472,7 @@ export default function WorkerList({
     const allIds = assignment.originalAssignments.map((a: any) => a.id);
     showConfirm({
       title: 'Delete Assignment Record?',
-      message: `Are you sure you want to permanently delete this work log entry (${assignment.workTitle} - ${assignment.shifts.join(' & ')})? This action cannot be undone.`,
+      message: `Are you sure you want to permanently delete this work log entry (${pickWorkTitle(language, assignment)} - ${assignment.shifts.join(' & ')})? This action cannot be undone.`,
       confirmText: 'Delete',
       isDestructive: true,
       onConfirm: () => {
@@ -578,7 +592,7 @@ export default function WorkerList({
             }}
             className="flex items-center gap-1.5 text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline cursor-pointer select-none whitespace-nowrap shrink-0"
           >
-            ← Back
+            {t(language, 'back')}
           </button>
         </div>
 
@@ -592,15 +606,15 @@ export default function WorkerList({
             <div className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6 relative bg-white dark:bg-slate-950">
               <div className="flex items-start gap-4 min-w-0 flex-grow">
                 <img
-                  src={historyData.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(historyData.name)}`}
-                  alt={`${historyData.name} profile photo`}
+                  src={historyData.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(pickWorkerName(language, historyData))}`}
+                  alt={`${pickWorkerName(language, historyData)} profile photo`}
                   loading="eager"
                   decoding="async"
                   className="w-14 h-14 rounded-xl object-cover border border-slate-100 dark:border-slate-800 shrink-0"
                 />
                 <div className="min-w-0 flex-grow">
                   <h2 className="text-lg font-display font-extrabold text-slate-900 dark:text-white truncate">
-                    {historyData.name}
+                    {pickWorkerName(language, historyData)}
                   </h2>
                   
                   {/* Phone list with individual Call & WhatsApp buttons */}
@@ -677,16 +691,16 @@ export default function WorkerList({
             {/* Date Filters block */}
             <div className="flex flex-col gap-3 border-b border-slate-100 dark:border-slate-800/80 pb-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 select-none">Filter Logs By Date</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 select-none">{t(language, 'filterLogsByDate')}</h3>
                 <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
                   <CustomSelect
                     value={dateFilterType}
                     onChange={setDateFilterType}
                     options={[
-                      { value: 'all', label: 'All Time' },
-                      { value: 'this-month', label: 'This Month' },
-                      { value: 'last-month', label: 'Last Month' },
-                      { value: 'custom', label: 'Custom Date Range' },
+                      { value: 'all', label: t(language, 'allTime') },
+                      { value: 'this-month', label: t(language, 'thisMonth') },
+                      { value: 'last-month', label: t(language, 'lastMonth') },
+                      { value: 'custom', label: t(language, 'customDateRange') },
                     ]}
                     size="sm"
                     className="flex-grow sm:flex-grow-0 sm:w-auto"
@@ -698,7 +712,7 @@ export default function WorkerList({
               {dateFilterType === 'custom' && (
                 <div className="flex items-center gap-2 animate-scale-in text-xs bg-slate-50 dark:bg-slate-900/40 p-3 rounded-xl border border-slate-200 dark:border-slate-800 max-w-md self-start sm:self-end w-full sm:w-auto">
                   <div className="flex flex-col gap-1 flex-1">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">From Date</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">{t(language, 'fromDate')}</span>
                     <input
                       type="date"
                       value={customFromDate}
@@ -707,7 +721,7 @@ export default function WorkerList({
                     />
                   </div>
                   <div className="flex flex-col gap-1 flex-1">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">To Date</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">{t(language, 'toDate')}</span>
                     <input
                       type="date"
                       value={customToDate}
@@ -721,7 +735,7 @@ export default function WorkerList({
             <div className={`glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 ${isTableEditing ? 'overflow-x-auto' : 'overflow-hidden'}`}>
               <div className={isTableEditing ? 'min-w-max' : 'w-full'}>
                 <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10 flex items-center justify-between">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Work History</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">{t(language, 'workHistory')}</h3>
                 {filteredAssignments.length > 0 && (
                   <div>
                     {isTableEditing ? (
@@ -730,13 +744,13 @@ export default function WorkerList({
                           onClick={() => setIsTableEditing(false)}
                           className="px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-[10px] font-extrabold transition-colors flex items-center gap-1 cursor-pointer border border-slate-200 dark:border-slate-700"
                         >
-                          <X className="w-3 h-3" /> Cancel
+                          <X className="w-3 h-3" /> {t(language, 'cancel')}
                         </button>
                         <button
                           onClick={handleSaveAllEdits}
                           className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-extrabold shadow transition-colors flex items-center gap-1 cursor-pointer"
                         >
-                          <Check className="w-3 h-3" /> Save All
+                          <Check className="w-3 h-3" /> {t(language, 'saveAll')}
                         </button>
                       </div>
                     ) : (
@@ -744,7 +758,7 @@ export default function WorkerList({
                         onClick={handleStartBulkEdit}
                         className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-[10px] font-extrabold shadow transition-colors flex items-center gap-1 cursor-pointer"
                       >
-                        <Edit2 className="w-3 h-3" /> Edit Logs
+                        <Edit2 className="w-3 h-3" /> {t(language, 'editLogs')}
                       </button>
                     )}
                   </div>
@@ -755,10 +769,10 @@ export default function WorkerList({
                   <thead>
                     <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50/50 dark:bg-slate-900/5 select-none">
                       {isTableEditing && <th className="py-3 px-1 w-8 text-center"></th>}
-                      <th className="py-3 px-1 w-8 text-center">SI No.</th>
-                      <th className={`py-3 px-1.5 ${isTableEditing ? 'w-44 min-w-[165px]' : 'w-24 min-w-[90px]'}`}>Date & Shift</th>
-                      <th className={`py-3 px-1.5 ${isTableEditing ? 'min-w-[150px]' : 'min-w-[100px]'}`}>Work</th>
-                      <th className={`py-3 pl-1.5 pr-5 text-right ${isTableEditing ? 'w-24' : 'w-16'}`}>Amount</th>
+                      <th className="py-3 px-1 w-8 text-center">{t(language, 'siNo')}</th>
+                      <th className={`py-3 px-1.5 ${isTableEditing ? 'w-44 min-w-[165px]' : 'w-24 min-w-[90px]'}`}>{t(language, 'dateAndShift')}</th>
+                      <th className={`py-3 px-1.5 ${isTableEditing ? 'min-w-[150px]' : 'min-w-[100px]'}`}>{t(language, 'workCol')}</th>
+                      <th className={`py-3 pl-1.5 pr-5 text-right ${isTableEditing ? 'w-24' : 'w-16'}`}>{t(language, 'amount')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200">
@@ -767,7 +781,7 @@ export default function WorkerList({
                         return (
                           <tr>
                             <td colSpan={isTableEditing ? 5 : 4} className="text-xs italic text-slate-455 py-12 text-center">
-                              No assignments found matching the selected date filters.
+                              {t(language, 'noAssignmentsFound')}
                             </td>
                           </tr>
                         );
@@ -793,7 +807,7 @@ export default function WorkerList({
                                     <button
                                       type="button"
                                       onClick={() => handleDeleteAssignment(assignment)}
-                                      aria-label={`Delete log entry for ${assignment.workTitle}`}
+                                      aria-label={`Delete log entry for ${pickWorkTitle(language, assignment)}`}
                                       className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-all cursor-pointer"
                                       title="Delete this record"
                                     >
@@ -871,7 +885,7 @@ export default function WorkerList({
                                       size="sm"
                                     />
                                   ) : (
-                                    assignment.workTitle
+                                    pickWorkTitle(language, assignment)
                                   )}
                                 </td>
 
@@ -921,7 +935,7 @@ export default function WorkerList({
                           {/* Total Row */}
                           <tr className="bg-slate-50/20 dark:bg-slate-900/10 border-t-2 border-slate-200 dark:border-slate-800 font-extrabold select-none">
                             <td colSpan={isTableEditing ? 4 : 3} className="py-3 px-1.5 text-left text-xs uppercase text-slate-500 dark:text-slate-400 tracking-wider">
-                              Total Earnings
+                              {t(language, 'totalEarnings')}
                             </td>
                             <td className="py-3 pl-1.5 pr-5 text-right text-sm font-black text-sky-600 dark:text-sky-400 whitespace-nowrap">
                               ₹{totalAmount}
@@ -957,7 +971,7 @@ export default function WorkerList({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-sky-500"
-              placeholder="Search by name or number..."
+              placeholder={t(language, 'searchByNameOrNumber')}
             />
           </div>
 
@@ -966,9 +980,9 @@ export default function WorkerList({
             value={statusFilter}
             onChange={setStatusFilter}
             options={[
-              { value: 'all', label: 'All Statuses' },
-              { value: 'active', label: 'Active Only' },
-              { value: 'inactive', label: 'Inactive Only' },
+              { value: 'all', label: t(language, 'allStatuses') },
+              { value: 'active', label: t(language, 'activeOnly') },
+              { value: 'inactive', label: t(language, 'inactiveOnly') },
             ]}
             size="sm"
             className="w-auto"
@@ -980,7 +994,7 @@ export default function WorkerList({
           onClick={openAddModal}
           className="flex items-center justify-center gap-1.5 px-4 py-2 bg-sky-600 text-white rounded-xl text-xs font-semibold cursor-pointer shadow-md hover:bg-sky-700 transition-colors select-none"
         >
-          <UserPlus className="w-4 h-4" /> Add Worker
+          <UserPlus className="w-4 h-4" /> {t(language, 'addWorker')}
         </button>
       </div>
 
@@ -994,17 +1008,17 @@ export default function WorkerList({
       ) : isError ? (
         <div className="flex flex-col items-center justify-center py-12 text-center p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
           <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">Failed to load Workers</h3>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t(language, 'failedToLoadWorkers')}</h3>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            {error instanceof Error ? error.message : 'Please check your connection and try again.'}
+            {error instanceof Error ? error.message : t(language, 'connectionError')}
           </p>
         </div>
       ) : workers.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
           <Users className="w-16 h-16 text-slate-300 dark:text-slate-700 mb-4" />
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">No workers found</h3>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t(language, 'noWorkers')}</h3>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-sm">
-            Try adjusting your search criteria or register a new worker using the button above.
+            {t(language, 'noWorkersHint')}
           </p>
         </div>
       ) : (
@@ -1030,14 +1044,16 @@ export default function WorkerList({
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 min-w-0 flex-grow">
                     <img
-                      src={worker.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(worker.name)}`}
-                      alt={`${worker.name} profile photo`}
+                      src={worker.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(pickWorkerName(language, worker))}`}
+                      alt={`${pickWorkerName(language, worker)} profile photo`}
                       loading="lazy"
                       decoding="async"
                       className="w-10 h-10 rounded-xl object-cover shrink-0 border border-slate-100 dark:border-slate-800"
                     />
                     <div className="min-w-0 space-y-1 flex-grow">
-                      <h3 className="text-base font-extrabold text-slate-900 dark:text-white truncate">{worker.name}</h3>
+                      <h3 className="text-base font-extrabold text-slate-900 dark:text-white truncate">
+                        {pickWorkerName(language, worker)}
+                      </h3>
                       <div className="flex flex-col gap-1 text-[13px] text-slate-500 dark:text-slate-400">
                         {/* Primary Number */}
                         <div className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300">
@@ -1075,7 +1091,7 @@ export default function WorkerList({
                 {/* Active Toggle Switch */}
                 <button
                   onClick={() => handleToggleActive(worker)}
-                  aria-label={`${worker.isActive ? 'Deactivate' : 'Activate'} ${worker.name}`}
+                  aria-label={`${worker.isActive ? 'Deactivate' : 'Activate'} ${pickWorkerName(language, worker)}`}
                   aria-pressed={worker.isActive}
                   className="flex items-center gap-1.5 py-1 px-2 rounded-lg text-xs font-bold text-slate-500 dark:text-slate-400 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/40 min-h-[36px] touch-active"
                 >
@@ -1094,7 +1110,7 @@ export default function WorkerList({
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => openEditModal(worker)}
-                    aria-label={`Edit details for ${worker.name}`}
+                    aria-label={`Edit details for ${pickWorkerName(language, worker)}`}
                     className="p-2 text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center touch-active"
                     title="Edit Worker Info"
                   >
@@ -1123,14 +1139,14 @@ export default function WorkerList({
             </button>
 
             <h3 className="text-md font-display font-extrabold text-slate-900 dark:text-white mb-6">
-              {editingWorker ? 'Edit Worker Details' : 'Register New Worker'}
+              {editingWorker ? t(language, 'editWorkerDetails') : t(language, 'registerNewWorker')}
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Full Name */}
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                  Full Name *
+                  {t(language, 'fullName')} *
                 </label>
                 <input
                   type="text"
@@ -1142,10 +1158,24 @@ export default function WorkerList({
                 />
               </div>
 
+              {/* Kannada Name */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                  {t(language, 'fullNameKn')}
+                </label>
+                <input
+                  type="text"
+                  value={nameKn}
+                  onChange={(e) => setNameKn(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm"
+                  placeholder={t(language, 'enterFullNameKn')}
+                />
+              </div>
+
               {/* Phone */}
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                  Phone Number *
+                  {t(language, 'phone')} *
                 </label>
                 <input
                   type="text"
@@ -1160,14 +1190,14 @@ export default function WorkerList({
                     }
                   }}
                   className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm"
-                  placeholder="Enter 10-digit number"
+                  placeholder={t(language, 'enterTenDigitNumber')}
                 />
               </div>
 
               {/* Alternate Phone */}
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                  Alternate Number
+                  {t(language, 'alternateNumber')}
                 </label>
                 <input
                   type="text"
@@ -1181,14 +1211,14 @@ export default function WorkerList({
                     }
                   }}
                   className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500 text-sm"
-                  placeholder="Enter 10-digit alternate number"
+                  placeholder={t(language, 'enterTenDigitAlternate')}
                 />
               </div>
 
               {/* Profile Image */}
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                  Profile Image
+                  {t(language, 'profileImage')}
                 </label>
                 <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-900/40 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
                   <img
@@ -1211,7 +1241,7 @@ export default function WorkerList({
                         onClick={() => setAvatarUrl('')}
                         className="text-[10px] text-red-500 hover:text-red-650 hover:underline text-left self-start cursor-pointer font-bold uppercase tracking-wider"
                       >
-                        Remove Image
+                        {t(language, 'removeImage')}
                       </button>
                     )}
                   </div>
@@ -1220,7 +1250,7 @@ export default function WorkerList({
 
               {/* Active Toggle Option in form */}
               <div className="flex items-center justify-between py-2 border-t border-slate-100 dark:border-slate-800/80 mt-4 pt-4">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Is Active Profile</span>
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t(language, 'isActiveProfile')}</span>
                 <button
                   type="button"
                   onClick={() => setIsActive(!isActive)}
@@ -1241,7 +1271,7 @@ export default function WorkerList({
                   onClick={closeModal}
                   className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold cursor-pointer hover:bg-slate-200 transition-colors"
                 >
-                  Cancel
+                  {t(language, 'cancel')}
                 </button>
                 <button
                   type="submit"
@@ -1251,7 +1281,7 @@ export default function WorkerList({
                   {(createWorkerMutation.isPending || updateWorkerMutation.isPending) && (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   )}
-                  {editingWorker ? 'Save Changes' : 'Register Worker'}
+                  {editingWorker ? t(language, 'saveChanges') : t(language, 'registerWorker')}
                 </button>
               </div>
             </form>

@@ -3,6 +3,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 export interface IWorker extends Document {
   _id: mongoose.Types.ObjectId;
   name: string;
+  nameKn: string;
   phone: string;
   alternatePhone: string | null;
   email: string;
@@ -18,6 +19,11 @@ const workerSchema = new Schema<IWorker>(
     name: {
       type: String,
       required: true,
+      trim: true,
+    },
+    nameKn: {
+      type: String,
+      default: '',
       trim: true,
     },
     phone: {

@@ -3,7 +3,9 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 export interface IWork extends Document {
   _id: mongoose.Types.ObjectId;
   title: string;
+  titleKn: string;
   description: string;
+  descriptionKn: string;
   category: string;
   priority: 'low' | 'medium' | 'high';
   status: 'pending' | 'in_progress' | 'completed';
@@ -20,9 +22,18 @@ const workSchema = new Schema<IWork>(
       required: true,
       trim: true,
     },
+    titleKn: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     description: {
       type: String,
       required: true,
+    },
+    descriptionKn: {
+      type: String,
+      default: '',
     },
     category: {
       type: String,

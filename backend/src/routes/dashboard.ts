@@ -65,9 +65,10 @@ router.get('/stats', authMiddleware, async (req: AuthenticatedRequest, res: Resp
       const assignedWorkIdSet = new Set(activeAssignments.map((id) => id.toString()));
       unassignedWorks = todayIncompleteWorks
         .filter((w) => !assignedWorkIdSet.has(w._id.toString()))
-        .map((w) => ({
+        .map((w: any) => ({
           id: w._id.toString(),
           title: w.title,
+          titleKn: w.titleKn || '',
           dueDate: w.dueDate,
           priority: w.priority,
           status: w.status,
@@ -107,6 +108,7 @@ router.get('/stats', authMiddleware, async (req: AuthenticatedRequest, res: Resp
         $group: {
           _id: '$worker._id',
           name: { $first: '$worker.name' },
+          nameKn: { $first: '$worker.nameKn' },
           role: { $first: '$worker.role' },
           avatarUrl: { $first: '$worker.avatarUrl' },
           activeAssignmentsCount: { $sum: 1 },
@@ -117,6 +119,7 @@ router.get('/stats', authMiddleware, async (req: AuthenticatedRequest, res: Resp
           _id: 0,
           id: { $toString: '$_id' },
           name: 1,
+          nameKn: 1,
           role: 1,
           avatarUrl: 1,
           activeAssignmentsCount: 1,

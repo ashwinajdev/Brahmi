@@ -245,12 +245,13 @@ router.post('/sync', authMiddleware, async (req: AuthenticatedRequest, res: Resp
 
     // Fetch updated active assignments with worker details
     const updatedAssignments = await WorkAssignment.find({ workId, unassignedAt: null })
-      .populate('workerId', 'id name avatarUrl role')
+      .populate('workerId', 'id name nameKn avatarUrl role')
       .lean();
 
     const activeWorkers = updatedAssignments.map((a: any) => ({
       id: a.workerId?._id?.toString(),
       name: a.workerId?.name,
+      nameKn: a.workerId?.nameKn,
       avatarUrl: a.workerId?.avatarUrl,
       role: a.workerId?.role,
       assignmentId: a._id.toString(),

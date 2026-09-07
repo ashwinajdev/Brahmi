@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppStore } from '../lib/store.ts';
 import { useKeepAlive } from '../lib/useKeepAlive.ts';
+import { t } from '../lib/i18n.ts';
 import {
   LayoutDashboard,
   Briefcase,
@@ -21,7 +22,7 @@ interface LayoutProps {
 }
 
 export default function Layout({ children, activeTab }: LayoutProps) {
-  const { user, logout } = useAppStore();
+  const { user, logout, language } = useAppStore();
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -43,11 +44,11 @@ export default function Layout({ children, activeTab }: LayoutProps) {
   }, []);
 
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, hash: '#dashboard' },
-    { id: 'works', label: 'Work Tasks', icon: Briefcase, hash: '#works' },
-    { id: 'workers', label: 'Worker', icon: Users, hash: '#workers' },
-    { id: 'history', label: 'Work History', icon: History, hash: '#history' },
-    { id: 'settings', label: 'Settings', icon: Settings, hash: '#settings' },
+    { id: 'dashboard', label: t(language, 'dashboard'), icon: LayoutDashboard, hash: '#dashboard' },
+    { id: 'works', label: t(language, 'workTasks'), icon: Briefcase, hash: '#works' },
+    { id: 'workers', label: t(language, 'worker'), icon: Users, hash: '#workers' },
+    { id: 'history', label: t(language, 'history'), icon: History, hash: '#history' },
+    { id: 'settings', label: t(language, 'settings'), icon: Settings, hash: '#settings' },
   ];
 
   const getTitle = () => {
@@ -61,7 +62,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
       {isOffline && (
         <div className="fixed top-0 left-0 right-0 z-50 bg-red-600 text-white text-xs font-semibold py-1.5 px-4 flex items-center justify-center gap-1.5 shadow-md animate-fade-in">
           <CloudOff className="w-4 h-4" />
-          <span>Offline mode — viewing cached data. Some features may be limited.</span>
+          <span>{t(language, 'offlineBanner')}</span>
         </div>
       )}
 
@@ -122,8 +123,8 @@ export default function Layout({ children, activeTab }: LayoutProps) {
               </div>
               <button
                 onClick={logout}
-                title="Log Out"
-                aria-label="Log out of Brahmi"
+                title={t(language, 'logout')}
+                aria-label={t(language, 'logout')}
                 className="p-1.5 text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
               >
                 <LogOut className="w-4.5 h-4.5" aria-hidden="true" />
@@ -155,8 +156,8 @@ export default function Layout({ children, activeTab }: LayoutProps) {
                   window.location.reload();
                 }, 300);
               }}
-              title="Refresh Page"
-              aria-label="Refresh page data"
+              title={t(language, 'refreshPage')}
+              aria-label={t(language, 'refreshPage')}
               className="w-8 h-8 mr-1 text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 border border-sky-100 dark:border-sky-900/60 hover:bg-sky-600 hover:text-white hover:border-sky-600 rounded-full shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center justify-center animate-none"
             >
               <RotateCw id="mobile-refresh-btn" className="w-4 h-4" />
@@ -225,7 +226,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
                       }`}
                     >
                       <Icon className="w-5 h-5" aria-hidden="true" />
-                      <span className="truncate">{item.id === 'history' ? 'History' : item.label}</span>
+                      <span className="truncate">{item.label}</span>
                     </a>
                   );
                 })}
@@ -237,7 +238,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
                   className="flex items-center gap-2 py-2.5 px-4 rounded-xl text-xs font-semibold bg-red-500/10 text-red-500 cursor-pointer min-h-[44px] touch-active"
                 >
                   <LogOut className="w-4 h-4" aria-hidden="true" />
-                  Logout
+                  {t(language, 'logout')}
                 </button>
               </div>
             </nav>
@@ -277,7 +278,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
                   onClick={() => setIsProfileOpen(false)}
                   className="w-full flex items-center justify-center gap-2 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer min-h-[44px] touch-active"
                 >
-                  <Settings className="w-4 h-4" aria-hidden="true" /> Settings
+                  <Settings className="w-4 h-4" aria-hidden="true" /> {t(language, 'settings')}
                 </a>
                 <button
                   onClick={() => {
@@ -287,7 +288,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
                   aria-label="Log out of Brahmi"
                   className="w-full flex items-center justify-center gap-2 py-2 text-xs font-semibold text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer min-h-[44px] touch-active"
                 >
-                  <LogOut className="w-4 h-4" aria-hidden="true" /> Log Out
+                  <LogOut className="w-4 h-4" aria-hidden="true" /> {t(language, 'logout')}
                 </button>
               </div>
             </div>
@@ -310,8 +311,8 @@ export default function Layout({ children, activeTab }: LayoutProps) {
                   window.location.reload();
                 }, 300);
               }}
-              title="Refresh Page"
-              aria-label="Refresh page data"
+              title={t(language, 'refreshPage')}
+              aria-label={t(language, 'refreshPage')}
               className="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-colors cursor-pointer flex items-center justify-center border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm"
             >
               <RotateCw id="desktop-refresh-btn" className="w-4 h-4" />
@@ -319,7 +320,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
 
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700/50">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5 animate-pulse"></span>
-              PWA Online
+              {t(language, 'pwaOnline')}
             </span>
           </div>
         </header>
@@ -354,7 +355,7 @@ export default function Layout({ children, activeTab }: LayoutProps) {
               >
                 <Icon className={`transition-transform duration-200 ${isActive ? 'w-5 h-5 scale-110' : 'w-5 h-5'}`} aria-hidden="true" />
                 <span className={`text-[9px] tracking-tight font-extrabold transition-all duration-200 ${isActive ? 'opacity-100' : 'opacity-80'}`}>
-                  {item.id === 'history' ? 'History' : item.label.split(' ')[0]}
+                  {item.label}
                 </span>
               </a>
             );

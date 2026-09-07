@@ -10,7 +10,9 @@ const router = Router();
 
 const workSchema = z.object({
   title: z.string().min(1, 'Title is required'),
+  titleKn: z.string().optional(),
   description: z.string().min(1, 'Description is required'),
+  descriptionKn: z.string().optional(),
   category: z.string().min(1, 'Category is required'),
   priority: z.enum(['low', 'medium', 'high']),
   status: z.enum(['pending', 'in_progress', 'completed']),
@@ -48,7 +50,7 @@ router.get('/grouped', authMiddleware, async (req: AuthenticatedRequest, res: Re
     }
 
     const works = await Work.find(filter)
-      .select('title description category priority status dueDate location createdAt updatedAt')
+      .select('title titleKn description descriptionKn category priority status dueDate location createdAt updatedAt')
       .sort({ dueDate: -1 })
       .lean();
 
@@ -75,7 +77,7 @@ router.get('/grouped', authMiddleware, async (req: AuthenticatedRequest, res: Re
       const assignments = await WorkAssignment.find({ workId: { $in: workIds } })
         .populate({
           path: 'workerId',
-          select: 'name avatarUrl role phone alternatePhone email isActive',
+          select: 'name nameKn avatarUrl role phone alternatePhone email isActive',
         })
         .sort({ assignedAt: -1 })
         .lean();
@@ -92,6 +94,7 @@ router.get('/grouped', authMiddleware, async (req: AuthenticatedRequest, res: Re
         workId: a.workId?.toString() ?? a.workId,
         workerId: a.workerId?._id?.toString() ?? a.workerId?.toString(),
         workerName: a.workerId?.name,
+        workerNameKn: a.workerId?.nameKn,
         workerAvatarUrl: a.workerId?.avatarUrl,
         assignedAt: a.assignedAt,
         unassignedAt: a.unassignedAt,
@@ -108,6 +111,7 @@ router.get('/grouped', authMiddleware, async (req: AuthenticatedRequest, res: Re
       const activeWorkers = activeAssignments.map((a: any) => ({
         id: a.workerId?._id?.toString(),
         name: a.workerId?.name,
+        nameKn: a.workerId?.nameKn,
         avatarUrl: a.workerId?.avatarUrl,
         role: a.workerId?.role,
         phone: a.workerId?.phone,
@@ -163,7 +167,7 @@ router.get('/', authMiddleware, async (req: AuthenticatedRequest, res: Response)
     if (category) filter.category = String(category);
 
     const works = await Work.find(filter)
-      .select('title description category priority status dueDate location createdAt updatedAt')
+      .select('title titleKn description descriptionKn category priority status dueDate location createdAt updatedAt')
       .sort({ dueDate: 1 })
       .lean();
 
@@ -179,7 +183,7 @@ router.get('/', authMiddleware, async (req: AuthenticatedRequest, res: Response)
       workId: { $in: workIds },
       unassignedAt: null,
     })
-      .populate('workerId', 'id name avatarUrl role isActive')
+      .populate('workerId', 'id name nameKn avatarUrl role isActive')
       .lean();
 
     // Group assignments by workId string
@@ -202,6 +206,7 @@ router.get('/', authMiddleware, async (req: AuthenticatedRequest, res: Response)
           workerMap.set(wId, {
             id: wId,
             name: worker.name,
+            nameKn: worker.nameKn,
             avatarUrl: worker.avatarUrl,
             role: worker.role,
             isActive: worker.isActive,
@@ -235,7 +240,7 @@ router.get('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Respon
     }
 
     const work = await Work.findById(id)
-      .select('title description category priority status dueDate location createdAt updatedAt')
+      .select('title titleKn description descriptionKn category priority status dueDate location createdAt updatedAt')
       .lean();
     if (!work) {
       res.status(404).json({ error: 'Work item not found' });
@@ -245,7 +250,7 @@ router.get('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Respon
     const assignments = await WorkAssignment.find({ workId: id })
       .populate({
         path: 'workerId',
-        select: 'name avatarUrl role phone alternatePhone email isActive',
+        select: 'name nameKn avatarUrl role phone alternatePhone email isActive',
       })
       .sort({ assignedAt: -1 })
       .lean();
@@ -255,6 +260,7 @@ router.get('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Respon
       .map((a: any) => ({
         id: a.workerId?._id?.toString(),
         name: a.workerId?.name,
+        nameKn: a.workerId?.nameKn,
         avatarUrl: a.workerId?.avatarUrl,
         role: a.workerId?.role,
         phone: a.workerId?.phone,
@@ -271,6 +277,7 @@ router.get('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Respon
       workId: a.workId?.toString() ?? a.workId,
       workerId: a.workerId?._id?.toString() ?? a.workerId?.toString(),
       workerName: a.workerId?.name,
+      workerNameKn: a.workerId?.nameKn,
       workerAvatarUrl: a.workerId?.avatarUrl,
       assignedAt: a.assignedAt,
       unassignedAt: a.unassignedAt,
@@ -298,7 +305,9 @@ router.post('/', authMiddleware, async (req: AuthenticatedRequest, res: Response
 
     const newWork = new Work({
       title: data.title,
+      titleKn: data.titleKn || '',
       description: data.description,
+      descriptionKn: data.descriptionKn || '',
       category: data.category,
       priority: data.priority,
       status: data.status,
