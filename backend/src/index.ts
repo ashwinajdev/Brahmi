@@ -7,6 +7,7 @@ import workerRoutes from './routes/workers.js';
 import workRoutes from './routes/works.js';
 import assignmentRoutes from './routes/assignments.js';
 import dashboardRoutes from './routes/dashboard.js';
+import deletionHistoryRoutes from './routes/deletion-history.js';
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ app.use('/api/workers', workerRoutes);
 app.use('/api/works', workRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/deletion-history', deletionHistoryRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

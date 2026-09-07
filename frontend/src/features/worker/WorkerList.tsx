@@ -33,7 +33,6 @@ interface Worker {
   activeAssignmentsCount: number;
   activeWorks: Array<{ id: string; title: string; status: string }>;
 }
-
 const formatWhatsAppLink = (phoneStr: string) => {
   const digitsOnly = phoneStr.replace(/\D/g, '');
   if (digitsOnly.length === 10) {
@@ -45,6 +44,56 @@ const formatWhatsAppLink = (phoneStr: string) => {
 const WhatsAppIcon = ({ className = 'w-4 h-4' }: { className?: string }) => (
   <img src="/whatsapp.png" alt="WhatsApp" className={`${className} object-contain`} />
 );
+
+interface AvatarPreview {
+  url: string;
+  name: string;
+}
+
+function AvatarPreviewModal({ preview, onClose }: { preview: AvatarPreview | null; onClose: () => void }) {
+  useEffect(() => {
+    if (!preview) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [preview, onClose]);
+
+  if (!preview) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${preview.name} profile photo`}
+      onClick={onClose}
+    >
+      <div
+        className="relative flex max-h-[90vh] max-w-[min(92vw,30rem)] flex-col items-center gap-3"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close profile photo"
+          className="absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-600 shadow-lg transition-colors hover:bg-slate-100 cursor-pointer"
+        >
+          <X className="h-5 w-5" />
+        </button>
+        <img
+          src={preview.url}
+          alt={`${preview.name} profile photo`}
+          className="max-h-[78vh] max-w-[92vw] rounded-2xl object-contain shadow-2xl"
+        />
+        <p className="max-w-[92vw] truncate text-sm font-bold text-white">{preview.name}</p>
+      </div>
+    </div>
+  );
+}
 
 interface WorkerListProps {
   initialHistoryWorkerId?: string | null;
@@ -64,6 +113,7 @@ export default function WorkerList({
   const [statusFilter, setStatusFilter] = useState('all'); // all, active, inactive
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWorker, setEditingWorker] = useState<Worker | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<AvatarPreview | null>(null);
   const [historyWorkerId, setHistoryWorkerId] = useState<string | null>(null);
   const sortOrder = 'desc';
   const [dateFilterType, setDateFilterType] = useState<string>('all'); // all, this-month, last-month, custom
@@ -605,13 +655,30 @@ export default function WorkerList({
             {/* Header profile card */}
             <div className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6 relative bg-white dark:bg-slate-950">
               <div className="flex items-start gap-4 min-w-0 flex-grow">
-                <img
-                  src={historyData.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(pickWorkerName(language, historyData))}`}
-                  alt={`${pickWorkerName(language, historyData)} profile photo`}
-                  loading="eager"
-                  decoding="async"
-                  className="w-14 h-14 rounded-xl object-cover border border-slate-100 dark:border-slate-800 shrink-0"
-                />
+                {historyData.avatarUrl ? (
+                  <button
+                    type="button"
+                    onClick={() => setAvatarPreview({ url: historyData.avatarUrl, name: pickWorkerName(language, historyData) })}
+                    aria-label={`View ${pickWorkerName(language, historyData)} profile photo`}
+                    className="shrink-0 cursor-zoom-in rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
+                  >
+                    <img
+                      src={historyData.avatarUrl}
+                      alt={`${pickWorkerName(language, historyData)} profile photo`}
+                      loading="eager"
+                      decoding="async"
+                      className="w-14 h-14 rounded-xl object-cover border border-slate-100 dark:border-slate-800"
+                    />
+                  </button>
+                ) : (
+                  <img
+                    src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(pickWorkerName(language, historyData))}`}
+                    alt={`${pickWorkerName(language, historyData)} profile photo`}
+                    loading="eager"
+                    decoding="async"
+                    className="w-14 h-14 rounded-xl object-cover border border-slate-100 dark:border-slate-800 shrink-0"
+                  />
+                )}
                 <div className="min-w-0 flex-grow">
                   <h2 className="text-lg font-display font-extrabold text-slate-900 dark:text-white truncate">
                     {pickWorkerName(language, historyData)}
@@ -949,8 +1016,9 @@ export default function WorkerList({
               </div>
             </div>
           </div>
-        </div>
+          </div>
         )}
+        <AvatarPreviewModal preview={avatarPreview} onClose={() => setAvatarPreview(null)} />
       </div>
     );
   }
@@ -1043,13 +1111,33 @@ export default function WorkerList({
                 {/* Header: Photo, Name, Contact Numbers, and Quick Actions */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 min-w-0 flex-grow">
-                    <img
-                      src={worker.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(pickWorkerName(language, worker))}`}
-                      alt={`${pickWorkerName(language, worker)} profile photo`}
-                      loading="lazy"
-                      decoding="async"
-                      className="w-10 h-10 rounded-xl object-cover shrink-0 border border-slate-100 dark:border-slate-800"
-                    />
+                    {worker.avatarUrl ? (
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setAvatarPreview({ url: worker.avatarUrl!, name: pickWorkerName(language, worker) });
+                        }}
+                        aria-label={`View ${pickWorkerName(language, worker)} profile photo`}
+                        className="shrink-0 cursor-zoom-in rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
+                      >
+                        <img
+                          src={worker.avatarUrl}
+                          alt={`${pickWorkerName(language, worker)} profile photo`}
+                          loading="lazy"
+                          decoding="async"
+                          className="w-10 h-10 rounded-xl object-cover border border-slate-100 dark:border-slate-800"
+                        />
+                      </button>
+                    ) : (
+                      <img
+                        src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(pickWorkerName(language, worker))}`}
+                        alt={`${pickWorkerName(language, worker)} profile photo`}
+                        loading="lazy"
+                        decoding="async"
+                        className="w-10 h-10 rounded-xl object-cover shrink-0 border border-slate-100 dark:border-slate-800"
+                      />
+                    )}
                     <div className="min-w-0 space-y-1 flex-grow">
                       <h3 className="text-base font-extrabold text-slate-900 dark:text-white truncate">
                         {pickWorkerName(language, worker)}
@@ -1288,6 +1376,7 @@ export default function WorkerList({
           </div>
         </div>
       )}
+      <AvatarPreviewModal preview={avatarPreview} onClose={() => setAvatarPreview(null)} />
     </div>
   );
 }

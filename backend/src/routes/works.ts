@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { z } from 'zod';
 import Work from '../models/Work.js';
 import WorkAssignment from '../models/WorkAssignment.js';
+import DeletionRecord from '../models/DeletionRecord.js';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth.js';
 import { autoUpdatePastWorks } from '../utils/workHelper.js';
 
@@ -366,6 +367,13 @@ router.delete('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Res
       res.status(404).json({ error: 'Work item not found' });
       return;
     }
+
+    const deletedSnapshot = existing.toObject();
+    await DeletionRecord.create({
+      type: 'work',
+      originalId: String(id),
+      snapshot: deletedSnapshot as unknown as Record<string, unknown>,
+    });
 
     // Cascade: delete all assignments for this work first
     await WorkAssignment.deleteMany({ workId: id });
